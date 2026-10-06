@@ -85,7 +85,8 @@ button { font: inherit; color: inherit; }
 #map path:hover { stroke: #fff; stroke-width: 1.4; }
 #map path.sel { stroke: #fff; stroke-width: 2.2; }
 #map path.fora { opacity: .25; }
-#map text { font-size: 11px; fill: #fff; paint-order: stroke; stroke: rgba(7,19,39,.85); stroke-width: 3px; pointer-events: none; font-weight: 600; vector-effect: non-scaling-stroke; }
+#map text { font-size: var(--fs, 24px); fill: #fff; paint-order: stroke; stroke: rgba(7,19,39,.9); stroke-width: 4px; pointer-events: none; font-weight: 700; vector-effect: non-scaling-stroke; letter-spacing: .02em; }
+#map text.oculto { display: none; }
 .back { position: absolute; left: 8px; top: 8px; border: 1px solid var(--axis); background: rgba(13,31,60,.9); color: var(--ink); border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 13px; }
 .back[hidden] { display: none; }
 .tip { position: fixed; z-index: 30; pointer-events: none; background: #0b1a33; border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; box-shadow: 0 8px 24px rgba(0,0,0,.4); max-width: 260px; display: none; }
@@ -268,7 +269,7 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
 </div></footer>
 <div class="tip" id="tip"></div>
 
-<script src="js/espectro.js?v=20261006i"></script>
+<script src="js/espectro.js?v=20261006j"></script>
 <script>
 'use strict';
 /* ---------------- constantes ---------------- */
@@ -466,12 +467,13 @@ const svg = $('map'), tip = $('tip');
 let vb = [0, 0, 1000, 1000], anim = 0;
 function zoom(alvo, rapido) {
   cancelAnimationFrame(anim);
-  if (rapido) { vb = alvo; svg.setAttribute('viewBox', vb.join(' ')); return; }
+  const fonte = () => svg.style.setProperty('--fs', (Math.max(vb[2], vb[3]) * (nivel() === 'reg' ? .034 : .03)).toFixed(1) + 'px');
+  if (rapido) { vb = alvo; svg.setAttribute('viewBox', vb.join(' ')); fonte(); return; }
   const de = vb.slice(), t0 = performance.now(), dur = 550;
   const passo = t => {
     const k = Math.min(1, (t - t0) / dur), e = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
     vb = de.map((v, i) => v + (alvo[i] - v) * e);
-    svg.setAttribute('viewBox', vb.join(' '));
+    svg.setAttribute('viewBox', vb.join(' ')); fonte();
     if (k < 1) anim = requestAnimationFrame(passo);
   };
   anim = requestAnimationFrame(passo);
@@ -495,7 +497,8 @@ async function desenhar() {
   let h = '';
   if (alvo === 'br') {
     for (const e of g.estados) h += `<path data-uf="${e.uf}" d="${e.d}"/>`;
-    for (const e of g.estados) h += `<text x="${e.c[0]}" y="${e.c[1]}" text-anchor="middle" dy=".35em">${e.uf.toUpperCase()}</text>`;
+    const desloca = { go: [-24, 26], df: [26, -10] }; // afasta rótulos que se sobrepõem
+    for (const e of g.estados) { const [dx, dy] = desloca[e.uf] || [0, 0]; h += `<text x="${e.c[0] + dx}" y="${e.c[1] + dy}" text-anchor="middle" dy=".35em" data-uf="${e.uf}">${e.uf.toUpperCase()}</text>`; }
   } else {
     for (const m of g.mu) h += `<path data-t="${m.t}" d="${m.d}"/>`;
   }
@@ -519,6 +522,11 @@ function destacar() {
     p.classList.toggle('sel', !!S.mun && t === S.mun);
   });
   const sel = svg.querySelector('path.sel'); if (sel) svg.insertBefore(sel, svg.querySelector('text'));
+  svg.querySelectorAll('text[data-uf]').forEach(t => {
+    const u = t.dataset.uf, dentro = n === 'reg' && REG[S.reg].ufs.includes(u);
+    t.textContent = dentro && !['df', 'se', 'al', 'rn', 'pb', 'es', 'rj'].includes(u) ? UF_NM[u] : u.toUpperCase();
+    t.classList.toggle('oculto', n === 'reg' && !dentro);
+  });
   $('back').hidden = n === 'br';
 }
 
@@ -1329,11 +1337,11 @@ function mostraAba() {
 }
 addEventListener('DOMContentLoaded', ir);
 </script>
-<script src="js/congresso.js?v=20261006i"></script>
-<script src="js/partidos.js?v=20261006i"></script>
-<script src="js/historico.js?v=20261006i"></script>
-<script src="js/comparar.js?v=20261006i"></script>
-<script src="js/contador.js?v=20261006i"></script>
-<script src="js/anuncios.js?v=20261006i"></script>
+<script src="js/congresso.js?v=20261006j"></script>
+<script src="js/partidos.js?v=20261006j"></script>
+<script src="js/historico.js?v=20261006j"></script>
+<script src="js/comparar.js?v=20261006j"></script>
+<script src="js/contador.js?v=20261006j"></script>
+<script src="js/anuncios.js?v=20261006j"></script>
 </body>
 </html>
