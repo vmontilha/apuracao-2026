@@ -1,0 +1,1529 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apuração Eleições 2026</title>
+<style>
+/* tema azul-escuro (único) */
+:root {
+  color-scheme: dark;
+  --page: #071327;
+  --surface: #0d1f3c;
+  --surface-2: #15294d;
+  --ink: #f3f7ff;
+  --ink-2: #b9c8e3;
+  --muted: #7f93b8;
+  --grid: #1c3260;
+  --axis: #2a4579;
+  --border: rgba(160,190,255,0.12);
+  --accent: #4d9bff;
+  --accent-2: #2563c4;
+  --good: #22c55e;
+  --good-text: #4ade80;
+  --warning: #fab219;
+  --critical: #f87171;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto 0; height: 220px; z-index: -1;
+  background: linear-gradient(180deg, #0f2a57 0%, var(--page) 100%); }
+.seg button.on, .seats { color: #fff; }
+/* cores fixas dos 3 primeiros candidatos a presidente (paleta categórica, ordem fixa) + "outros" */
+:root { --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c-outros: #3a5585; }
+.stack { display: flex; height: 10px; border-radius: 0 4px 4px 0; overflow: hidden; gap: 2px; background: var(--grid); min-width: 90px; }
+.stack > i { display: block; height: 100%; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+.lider { font-weight: 600; white-space: nowrap; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; justify-content: space-between; margin-bottom: 14px; }
+h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+.sub { color: var(--ink-2); font-size: 13px; }
+.live { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.on { background: var(--good); animation: pulse 1.6s infinite; }
+.dot.err { background: var(--critical); }
+@keyframes pulse { 50% { opacity: .35; } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 14px; }
+.f { display: flex; flex-direction: column; gap: 4px; min-width: 120px; flex: 1 1 140px; }
+.f label { font-size: 12px; color: var(--muted); }
+select, input[type=search], input[type=text] {
+  font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--axis);
+  border-radius: 7px; padding: 7px 9px; width: 100%;
+}
+.seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 7px; overflow: hidden; }
+.seg button { font: inherit; border: 0; background: transparent; color: var(--ink-2); padding: 7px 12px; cursor: pointer; }
+.seg button.on { background: var(--accent); color: #fff; }
+.tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid var(--axis); }
+.tabs button { font: inherit; border: 0; background: none; color: var(--ink-2); padding: 8px 14px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.chk { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); white-space: nowrap; padding-bottom: 8px; }
+.banner { border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 13px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink-2); }
+.banner.sim { border-color: var(--warning); }
+.banner strong { color: var(--ink); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.tile .k { font-size: 12px; color: var(--muted); }
+.tile .v { font-size: 22px; font-weight: 600; margin-top: 2px; }
+.tile .s { font-size: 12px; color: var(--ink-2); }
+.meter { height: 6px; background: var(--grid); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+.meter > i { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width .6s; }
+.grid { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+.card h2 { font-size: 15px; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.card h2 small { font-weight: 400; color: var(--muted); font-size: 12px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-size: 12px; font-weight: 500; color: var(--muted); padding: 6px; border-bottom: 1px solid var(--axis); white-space: nowrap; user-select: none; }
+th[data-sort] { cursor: pointer; }
+th[data-sort]:hover { color: var(--ink); }
+th.sorted { color: var(--ink); }
+td { padding: 6px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+td.r, th.r { text-align: right; }
+tr.hl td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+tr.click { cursor: pointer; }
+tr.click:hover td { background: var(--surface-2); }
+.cand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cand img, .cand .ph { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex: none; background: var(--surface-2); }
+.cand .nm { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cand .full { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barcell { width: 16%; min-width: 70px; }
+.bar { height: 8px; background: var(--grid); border-radius: 0 4px 4px 0; position: relative; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; transition: width .6s; }
+.bar > b { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--ink-2); border-radius: 1px; }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; }
+.pill.el { color: var(--good-text); background: color-mix(in srgb, var(--good) 14%, transparent); font-weight: 500; }
+.pill.sup { color: var(--ink-2); background: var(--surface-2); }
+.pill.fora { color: var(--muted); background: transparent; border: 1px solid var(--grid); }
+.seats { display: inline-block; min-width: 20px; text-align: center; font-size: 11px; font-weight: 600; padding: 0 5px; margin-left: 4px; border-radius: 4px; background: var(--accent); color: #fff; }
+.seats.zero { background: var(--surface-2); color: var(--muted); font-weight: 400; }
+.check { font-size: 12px; margin-top: 10px; padding: 8px 10px; border-radius: 7px; background: var(--surface-2); color: var(--ink-2); }
+.check.ok { color: var(--good-text); background: color-mix(in srgb, var(--good) 10%, transparent); }
+.check.bad { color: var(--critical); background: color-mix(in srgb, var(--critical) 10%, transparent); }
+.delta { font-size: 11px; color: var(--good-text); }
+.rk { color: var(--muted); font-size: 12px; }
+.up { color: var(--good-text); } .dn { color: var(--critical); }
+.cmp { font-weight: 600; white-space: nowrap; }
+.tag { font-size: 10px; color: var(--muted); border: 1px solid var(--axis); border-radius: 4px; padding: 0 3px; margin-left: 3px; }
+.tablewrap { overflow-x: auto; }
+.muni-list { max-height: 520px; overflow-y: auto; }
+.more { margin-top: 10px; text-align: center; }
+.btn { font: inherit; border: 1px solid var(--axis); background: var(--surface); color: var(--ink); border-radius: 7px; padding: 6px 14px; cursor: pointer; }
+.btn:hover { background: var(--surface-2); }
+.empty { color: var(--muted); padding: 24px 6px; text-align: center; }
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.hero { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+.hero img, .hero .ph { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--surface-2); flex: none; }
+.hero h2 { margin: 0; font-size: 20px; display: block; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--ink-2); align-items: center; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 12px; height: 8px; background: var(--accent); border-radius: 0 3px 3px 0; vertical-align: middle; margin-right: 4px; }
+.legend b { display: inline-block; width: 2px; height: 12px; background: var(--ink-2); vertical-align: middle; margin-right: 4px; }
+.geral-only.hidden, .hidden { display: none !important; }
+@media (max-width: 1100px) { #viewGeral .barcell { display: none; } }
+@media (max-width: 600px) { .hide-sm { display: none; } .tile .v { font-size: 18px; } }
+#tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--page); font-size: 12px; padding: 6px 8px; border-radius: 6px; opacity: 0; transition: opacity .1s; z-index: 10; max-width: 280px; white-space: pre-line; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><a href="./" style="color:var(--accent);text-decoration:none;font-weight:500;font-size:14px;margin-right:8px">← Mapa</a>Apuração · Eleições 2026</h1>
+      <div class="sub">1º turno · 04/10/2026 · dados públicos do TSE</div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <span class="live"><span class="dot" id="dot"></span><span id="status">carregando…</span></span>
+      <div class="seg" id="modeSeg">
+        <button data-mode="live" class="on">Ao vivo (TSE)</button>
+        <button data-mode="sim">Simulação</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button data-view="geral" class="on">Visão geral</button>
+    <button data-view="cand">Por candidato</button>
+    <button data-view="pres">Presidente · Brasil</button>
+  </div>
+
+  <div class="card filters">
+    <div class="f"><label for="cargo">Cargo</label>
+      <select id="cargo"></select></div>
+    <div class="f"><label for="regiao">Região</label>
+      <select id="regiao"></select></div>
+    <div class="f"><label for="uf">Estado</label>
+      <select id="uf"></select></div>
+    <div class="f geral-only" style="flex-basis:200px"><label for="mun">Município</label>
+      <input type="text" id="mun" list="munList" placeholder="Todo o estado">
+      <datalist id="munList"></datalist></div>
+    <div class="f geral-only"><label for="partido">Partido</label>
+      <select id="partido"><option value="">Todos</option></select></div>
+    <div class="f geral-only" style="flex-basis:180px"><label for="busca">Candidato</label>
+      <input type="search" id="busca" placeholder="Nome ou número"></div>
+    <div class="f cand-only hidden" style="flex-basis:300px"><label for="candSel">Candidato</label>
+      <input type="text" id="candSel" list="candList" placeholder="Digite nome ou número">
+      <datalist id="candList"></datalist></div>
+    <div class="f" style="flex:0 0 auto;min-width:0"><label for="intervalo">Atualizar a cada</label>
+      <select id="intervalo"><option value="15">15 s</option><option value="30" selected>30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="0">Pausado</option></select></div>
+    <label class="chk geral-only"><input type="checkbox" id="soEleitos"> Só eleitos</label>
+  </div>
+
+  <div id="banner"></div>
+
+  <!-- VISÃO GERAL -->
+  <section id="viewGeral">
+    <div class="tiles" id="tiles"></div>
+    <div class="grid">
+      <div class="card">
+        <h2><span id="candTitle">Candidatos</span><small id="candCount"></small></h2>
+        <div class="tablewrap">
+          <table>
+            <thead><tr>
+              <th class="r" style="width:44px">#</th>
+              <th>Candidato</th>
+              <th class="hide-sm">Partido</th>
+              <th class="r">Votos</th>
+              <th class="r">%</th>
+              <th class="r h22" title="Votos do candidato em 2022 no mesmo recorte">2022</th>
+              <th class="r h22" title="Votos de 2026 comparados aos votos de 2022 proporcionais às urnas já apuradas">vs 2022</th>
+              <th class="barcell hide-sm"></th>
+              <th>Situação</th>
+            </tr></thead>
+            <tbody id="candBody"></tbody>
+          </table>
+        </div>
+        <div class="more" id="more"></div>
+      </div>
+      <div class="side">
+        <div class="card">
+          <h2><span>Partidos / federações</span><small id="partyNote"></small></h2>
+          <div class="tablewrap"><table>
+            <thead id="partyHead"><tr><th>Agremiação</th><th class="r">Votos</th><th class="r" title="Cadeiras no estado pelo cálculo próprio">Cadeiras</th></tr></thead>
+            <tbody id="partyBody"></tbody>
+          </table></div>
+          <div id="checkBox"></div>
+        </div>
+        <div class="card">
+          <h2><span id="andTitulo">Andamento por município</span><small>clique para filtrar</small></h2>
+          <input type="search" id="munBusca" placeholder="Buscar município" style="margin-bottom:8px">
+          <div class="muni-list"><table>
+            <thead><tr><th data-msort="nm">Município</th><th class="r" data-msort="p">Seções</th><th class="r">Apurado</th></tr></thead>
+            <tbody id="muniBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRESIDENTE · BRASIL -->
+  <section id="viewPres" class="hidden">
+    <div class="tiles" id="presTiles"></div>
+    <div class="card" style="margin-bottom:14px">
+      <h2><span id="presTitulo">Presidente · Brasil</span><small id="presNote"></small></h2>
+      <div class="tablewrap"><table>
+        <thead><tr><th class="r" style="width:44px">#</th><th>Candidato</th><th class="hide-sm">Partido</th><th class="r">Votos</th><th class="r">%</th><th class="r" title="Estados em que o candidato está em 1º lugar">Lidera em</th><th class="barcell hide-sm"></th><th>Situação</th></tr></thead>
+        <tbody id="presBody"></tbody>
+      </table></div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <h2><span>Por estado</span><small>clique num estado para ver as cidades</small></h2>
+      <div class="legend" id="presLegend" style="margin-bottom:8px"></div>
+      <div class="tablewrap"><table>
+        <thead id="presUfHead"></thead>
+        <tbody id="presUfBody"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2><span id="presCidTitle">Por cidade</span><small id="presCidProg"></small></h2>
+      <input type="search" id="presCidBusca" placeholder="Buscar município" style="max-width:260px;margin-bottom:8px">
+      <div class="tablewrap"><table>
+        <thead id="presCidHead"></thead>
+        <tbody id="presCidBody"></tbody>
+      </table></div>
+      <div class="more" id="presCidMore"></div>
+    </div>
+  </section>
+
+  <!-- POR CANDIDATO -->
+  <section id="viewCand" class="hidden">
+    <div id="candEmpty" class="card empty">Escolha um candidato no campo acima ou clique em um nome na Visão geral.</div>
+    <div id="candArea" class="hidden">
+      <div class="card" style="margin-bottom:14px">
+        <div class="hero" id="candHero"></div>
+        <div class="tiles" id="candTiles" style="margin:0"></div>
+      </div>
+      <div class="card">
+        <h2><span id="cmTitulo">Votação por município</span><small id="cmProg"></small></h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <input type="search" id="cmBusca" placeholder="Buscar município" style="max-width:260px">
+          <div class="legend"><span><i></i>votos 2026</span><span><b></b>esperado pelo ritmo de 2022</span></div>
+        </div>
+        <div class="tablewrap"><table>
+          <thead><tr>
+            <th data-sort="nm">Município</th>
+            <th class="r" data-sort="p">Urnas</th>
+            <th class="r" data-sort="v">Votos 2026</th>
+            <th class="r" data-sort="pos" title="Posição do candidato entre todos do mesmo cargo no município">Posição</th>
+            <th class="r hide-sm" data-sort="pv">% válidos</th>
+            <th class="r h22" data-sort="v22">2022</th>
+            <th class="r h22 hide-sm" data-sort="exp" title="Votos de 2022 × % de urnas apuradas no município">Esperado</th>
+            <th class="r h22" data-sort="d" title="Votos de 2026 comparados ao esperado pelo ritmo de 2022">vs 2022</th>
+            <th class="barcell hide-sm"></th>
+          </tr></thead>
+          <tbody id="cmBody"></tbody>
+        </table></div>
+        <div class="more" id="cmMore"></div>
+      </div>
+    </div>
+  </section>
+</div>
+<div id="tip"></div>
+
+<script>
+/* eleição 6259 = estadual (governador, senador, deputados); 6257 = federal (presidente) */
+const ELE_EST = '6259', ELE_PRES = '6257';
+const eleDo = cargo => cargo === '1' ? ELE_PRES : ELE_EST;
+const baseDo = cargo => 'https://resultados.tse.jus.br/oficial/ele2026/' + eleDo(cargo);
+const CARGOS = { '1': 'Presidente', '3': 'Governador', '5': 'Senador', '6': 'Deputado Federal', '7': 'Deputado Estadual', '8': 'Deputado Distrital' };
+const CARGO_SIGLA = { '6': 'DF', '7': 'DE', '8': 'DD' };
+const majoritario = cargo => cargo === '1' || cargo === '3' || cargo === '5';
+const REGIOES = {
+  N:  { nm: 'Norte', ufs: ['ac','am','ap','pa','ro','rr','to'] },
+  NE: { nm: 'Nordeste', ufs: ['al','ba','ce','ma','pb','pe','pi','rn','se'] },
+  CO: { nm: 'Centro-Oeste', ufs: ['df','go','ms','mt'] },
+  SE: { nm: 'Sudeste', ufs: ['es','mg','rj','sp'] },
+  S:  { nm: 'Sul', ufs: ['pr','rs','sc'] },
+};
+const VAGAS_FED = { sp:70, mg:53, rj:46, ba:39, rs:31, pr:30, pe:25, ce:22, ma:18, go:17, pa:17, sc:16, pb:12, es:10, pi:10, al:9 };
+
+const $ = id => document.getElementById(id);
+const fmt = n => Number(n || 0).toLocaleString('pt-BR');
+const pct = n => Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+const pct1 = n => Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+const num = v => v == null || v === '' ? 0 : Number(String(v).replace(',', '.'));
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+const pad = (n, w) => String(n).padStart(w, '0');
+
+const st = {
+  mode: 'live', view: 'geral', cargo: '6', regiao: '', uf: 'rj', mun: '', partido: '', busca: '', soEleitos: false,
+  candSq: '', config: null, result: null, ufResult: null, ab: null, limit: 50, cmLimit: 100, cmSort: 'v', cmDir: -1,
+  prevVotes: new Map(), prevRank: new Map(), deltas: new Map(), rankMoves: new Map(), lastKey: '',
+  muniSort: 'p', timer: null, loading: false,
+};
+try { Object.assign(st, JSON.parse(localStorage.getItem('apuracao-filtros') || '{}')); } catch (e) {}
+function persist() {
+  try { localStorage.setItem('apuracao-filtros', JSON.stringify({ cargo: st.cargo, regiao: st.regiao, uf: st.uf, mode: st.mode })); } catch (e) {}
+}
+
+/* ---------------- fontes ---------------- */
+/* "Foto" publicada: quando a página está hospedada junto com os arquivos tse/<eleição>/...,
+   lê esses arquivos em vez do TSE (a hospedagem não acessa o TSE ao vivo).
+   Arquivos de município ficam agrupados por estado/cargo em mun-<uf>-c<cargo>.json. */
+let FOTO = null; // { data } quando estiver no modo foto
+const pacotesFoto = new Map();
+async function getJSONbruto(url) {
+  const r = await fetch(url, { cache: 'no-store' });
+  if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+  return r.json();
+}
+async function getJSON(url) {
+  if (!FOTO || !/^https:\/\/resultados\.tse\.jus\.br\//.test(url)) return getJSONbruto(url);
+  const m = /\/ele2026\/(\d+)\/(?:dados\/[a-z]{2}|config)\/([^?#]+)/.exec(url);
+  if (!m) { const e = new Error('HTTP 404'); e.status = 404; throw e; }
+  const [, ele, arq] = m;
+  const mun = /^([a-z]{2})(\d{5})-c(\d{4})-e\d+-u\.json$/.exec(arq);
+  if (!mun) return getJSONbruto(`tse/${ele}/${arq}`);
+  const chave = `tse/${ele}/mun-${mun[1]}-c${mun[3]}.json`;
+  if (!pacotesFoto.has(chave)) pacotesFoto.set(chave, getJSONbruto(chave).catch(() => ({})));
+  const pacote = await pacotesFoto.get(chave);
+  if (!pacote[mun[2]]) { const e = new Error('HTTP 404'); e.status = 404; throw e; }
+  return pacote[mun[2]];
+}
+const ufs = () => st.config ? st.config.abr : [];
+const ufInfo = cd => ufs().find(u => u.cd === cd);
+const munInfo = () => { const u = ufInfo(st.uf); return u && st.mun ? u.mu.find(m => m.cd === st.mun) : null; };
+const resultUrl = mun => `${baseDo(st.cargo)}/dados/${st.uf}/${st.uf}${mun || ''}-c${pad(st.cargo, 4)}-e${pad(eleDo(st.cargo), 6)}-u.json`;
+const brUrl = () => `${baseDo('1')}/dados/br/br-c0001-e${pad(ELE_PRES, 6)}-u.json`;
+const abUrl = () => `${baseDo(st.cargo)}/dados/${st.uf}/${st.uf}-e${pad(eleDo(st.cargo), 6)}-ab.json`;
+const fotoUrl = (sq, uf) => `${baseDo(st.cargo)}/fotos/${st.cargo === '1' ? 'br' : (uf || st.uf)}/${sq}.jpeg`;
+const fotoTag = (sq, uf) => st.mode === 'live'
+  ? `<img loading="lazy" src="${fotoUrl(sq, uf)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">`
+  : '<span class="ph"></span>';
+
+/* ---------------- "Todos" no filtro de estado ----------------
+   uf = 'br' significa todos os estados (ou só os da região escolhida).
+   Presidente sem região usa os arquivos nacionais do TSE; os demais casos juntam os arquivos de cada estado. */
+const TODOS = 'br';
+const ehTodos = () => st.uf === TODOS;
+const mesclando = () => ehTodos() && (st.cargo !== '1' || !!st.regiao);
+function ufsAlvo() { const l = ufs().map(u => u.cd); return st.regiao ? REGIOES[st.regiao].ufs.filter(x => l.includes(x)) : l; }
+function lugarNome() { return ehTodos() ? (st.regiao ? 'Região ' + REGIOES[st.regiao].nm : 'Brasil') : (ufInfo(st.uf)?.ds || st.uf.toUpperCase()); }
+// "unidades" da tabela por candidato: municípios do estado, ou estados (+ exterior) no modo Todos
+function unidades() {
+  if (ehTodos()) return [...ufsAlvo().map(cd => ({ cd, nm: ufInfo(cd).ds })), ...(st.regiao ? [] : [{ cd: 'zz', nm: 'EXTERIOR' }])];
+  return ufInfo(st.uf)?.mu || [];
+}
+const unidadeUrl = cd => ehTodos() ? presUrl(cd) : resultUrl(cd);
+const cargoDaUf = uf => (uf === 'df' && st.cargo === '7') ? '8' : st.cargo; // no DF, "estadual" é distrital
+function mesclar(res) {
+  const soma = f => res.reduce((s, x) => s + num(f(x.r)), 0);
+  const pc = (x, y) => String(y ? x / y * 100 : 0);
+  const ts = soma(r => r.s?.ts), stt = soma(r => r.s?.st), te = soma(r => r.e?.te), c = soma(r => r.e?.c), a = soma(r => r.e?.a);
+  const est = soma(r => r.e?.est) || te; // eleitorado das seções já totalizadas (base do comparecimento)
+  const tv = soma(r => r.v?.tv), vv = soma(r => r.v?.vv), vb = soma(r => r.v?.vb), tvn = soma(r => r.v?.tvn);
+  const agr = res.flatMap(({ uf, r }) => (r.carg?.[0]?.agr || []).map(g => ({ ...g, par: (g.par || []).map(p => ({ ...p, cand: (p.cand || []).map(k => ({ ...k, __uf: uf })) })) })));
+  return { ht: res.map(x => x.r.ht || '').sort().pop(),
+    s: { ts: String(ts), st: String(stt), pstn: pc(stt, ts) },
+    e: { te: String(te), est: String(est), c: String(c), a: String(a), pcn: pc(c, est), pan: pc(a, est) },
+    v: { tv: String(tv), vv: String(vv), pvvn: pc(vv, tv), vb: String(vb), pvbn: pc(vb, tv), tvn: String(tvn), ptvnn: pc(tvn, tv) },
+    carg: [{ cd: st.cargo, nv: String(soma(r => r.carg?.[0]?.nv)), agr }] };
+}
+
+/* percentual de seções totalizadas por município (0..1), a partir do arquivo de andamento
+   (no modo Todos, por estado) */
+function pstByMun() {
+  const m = new Map(), tp = ehTodos() ? 'uf' : 'mun';
+  for (const a of (st.ab && st.ab.abr) || []) if (a.tpabr === tp) m.set(a.cdabr, { p: num(a.s.pstn) / 100, st: num(a.s.st) });
+  return m;
+}
+
+/* ---------------- 2022 ---------------- */
+const H22 = { uf: null, byName: new Map(), ok: false };
+async function load2022() {
+  if (st.mode === 'sim' || ehTodos()) return;
+  if (H22.uf === st.uf) return;
+  H22.uf = st.uf; H22.byName = new Map(); H22.ok = false;
+  try {
+    const d = await getJSON(`dados2022/${st.uf}.json`);
+    for (const c of d.c) {
+      const o = { nm: c[0], nmu: c[1], n: c[2], sg: c[3], cargo: c[4], sit: c[5], total: c[6], mun: c[7] };
+      const k = norm(o.nm);
+      (H22.byName.get(k) || H22.byName.set(k, []).get(k)).push(o);
+    }
+    H22.ok = true;
+  } catch (e) { H22.ok = false; }
+}
+/* histórico de 2022 do candidato (casado pelo nome completo dentro do mesmo estado) */
+function hist(k) {
+  if (st.mode === 'sim') return Sim.hist(k);
+  const arr = H22.byName.get(norm(k.nm));
+  if (!arr) return null;
+  return arr.find(c => c.cargo === st.cargo) || arr.reduce((a, b) => (b.total > a.total ? b : a));
+}
+// a base de 2022 só tem deputados: para senador/governador/presidente a comparação não faz sentido
+const has2022 = () => !majoritario(st.cargo) && !ehTodos() && (st.mode === 'sim' || H22.ok);
+/* votos de 2022 "esperados" até agora: votos de 2022 em cada município × % de urnas apuradas nele */
+function expected(h, mun) {
+  if (!h) return null;
+  const pm = pstByMun();
+  if (mun) return (h.mun[mun] || 0) * (pm.get(mun)?.p || 0);
+  if (!pm.size) { const s = st.ufResult && st.ufResult.s; return s ? h.total * num(s.pstn) / 100 : null; }
+  let e = 0;
+  for (const cd in h.mun) e += h.mun[cd] * (pm.get(cd)?.p || 0);
+  return e;
+}
+function cmpCell(atual, esp, tipExtra) {
+  if (esp == null || esp <= 0) return '<span class="rk">—</span>';
+  const d = (atual / esp - 1) * 100;
+  const cls = d >= 0 ? 'up' : 'dn';
+  const tip = `Esperado pelo ritmo de 2022: ${fmt(Math.round(esp))} votos&#10;Atual: ${fmt(atual)}${tipExtra || ''}`;
+  return `<span class="cmp ${cls}" data-tip="${tip}">${d >= 0 ? '▲ +' : '▼ '}${pct1(d)}</span>`;
+}
+
+/* ---------------- distribuição das cadeiras (cálculo próprio) ----------------
+   Código Eleitoral arts. 106-111, com Lei 14.211/2021 e STF (ADIs 7228, 7263, 7325, 2024):
+   1) QE = votos válidos (nominais + legenda) / vagas; fração <= 0,5 desprezada, > 0,5 arredonda p/ cima
+   2) QP = floor(votos da agremiação / QE); entram os mais votados com >= 10% do QE
+   3) sobras: maiores médias (votos / (cadeiras + 1)) entre agremiações com >= 80% do QE
+      e candidatos com >= 20% do QE
+   4) sem mais quem cumpra as exigências: maiores médias entre todas as agremiações e candidatos
+   Empates na média: agremiação mais votada -> candidato com mais votos -> candidato mais idoso.
+   Empates entre candidatos da mesma lista: o mais idoso.
+   Se nenhuma agremiação atingir o QE, elegem-se os mais votados (art. 111). */
+function allocate(r) {
+  const c = r && r.carg && r.carg[0];
+  if (!c) return null;
+  const nv = num(c.nv);
+  const born = d => { const m = /(\d\d)\/(\d\d)\/(\d{4})/.exec(d || ''); return m ? Number(m[3] + m[2] + m[1]) : 99999999; };
+  const valid = d => !d || /^v[aá]lido/i.test(d);
+  const agrs = (c.agr || []).map((a, i) => {
+    let votos = 0; const cands = [];
+    for (const p of a.par || []) {
+      const pOk = valid(p.dvt); // legenda anulada (ex.: fraude à cota) invalida também os votos nominais do partido
+      // tval = votos de legenda propriamente ditos; tvtl inclui também os nominais transferidos
+      // à legenda ("Válido (legenda)"), que já são somados abaixo, candidato a candidato
+      if (pOk) votos += num(p.tval ?? p.tvtl);
+      for (const k of p.cand || []) {
+        const v = num(k.vap);
+        const kv = pOk && valid(k.dvt);
+        if (kv) votos += v;
+        cands.push({ sq: k.sqcand, v, sg: p.sg, born: born(k.dt), ok: kv && !/legenda/i.test(k.dvt || '') });
+      }
+    }
+    cands.sort((x, y) => y.v - x.v || x.born - y.born);
+    return { id: i, nm: a.com || a.nm, votos, cands, seats: 0 };
+  });
+  const vv = agrs.reduce((s, a) => s + a.votos, 0);
+  if (!vv || !nv) return null;
+  const raw = vv / nv;
+  const qe = raw - Math.floor(raw) > 0.5 ? Math.ceil(raw) : Math.floor(raw);
+  const elected = new Map(); // sq -> 'QP' | 'média'
+  const nextOk = (a, min) => { const k = a.cands.find(k => k.ok && !elected.has(k.sq)); return k && k.v >= min ? k : null; };
+  const give = (a, k, via) => { elected.set(k.sq, via); a.seats++; };
+  let left = nv;
+
+  if (!agrs.some(a => a.votos >= qe)) { // art. 111
+    const all = agrs.flatMap(a => a.cands.filter(k => k.ok).map(k => ({ a, k }))).sort((x, y) => y.k.v - x.k.v || x.k.born - y.k.born);
+    for (const { a, k } of all.slice(0, nv)) give(a, k, 'média');
+    left = 0;
+  }
+  if (left) for (const a of agrs) { // QP
+    const qp = Math.floor(a.votos / qe);
+    for (let i = 0; i < qp && left; i++) { const k = nextOk(a, qe * 0.1); if (!k) break; give(a, k, 'QP'); left--; }
+  }
+  const best = (pool, min) => {
+    let b = null, bm = -1;
+    for (const a of pool) {
+      const k = nextOk(a, min); if (!k) continue;
+      const m = a.votos / (a.seats + 1);
+      const win = m > bm || (m === bm && (a.votos > b.a.votos || (a.votos === b.a.votos &&
+        (k.v > b.k.v || (k.v === b.k.v && k.born < b.k.born)))));
+      if (win) { bm = m; b = { a, k }; }
+    }
+    return b;
+  };
+  const elig = agrs.filter(a => a.votos >= qe * 0.8);
+  while (left) { const b = best(elig, qe * 0.2); if (!b) break; give(b.a, b.k, 'média'); left--; }
+  while (left) { const b = best(agrs, 0); if (!b) break; give(b.a, b.k, 'média'); left--; }
+
+  const status = new Map(), seatsByAgr = new Map(), seatsBySg = new Map();
+  for (const a of agrs) {
+    seatsByAgr.set(a.id, a.seats);
+    for (const k of a.cands) {
+      const via = elected.get(k.sq);
+      if (via) seatsBySg.set(k.sg, (seatsBySg.get(k.sg) || 0) + 1);
+      status.set(k.sq, via ? { s: 'el', via } : { s: a.seats > 0 && k.ok ? 'sup' : 'fora' });
+    }
+  }
+  return { qe, vv, nv, status, seatsByAgr, seatsBySg, agrs };
+}
+
+/* confere o cálculo próprio com o que o TSE marcou no arquivo (quando ele marca) */
+function checkTSE(r, al) {
+  if (!al || st.mode === 'sim') return null;
+  const tseEl = new Set(); const tseVag = new Map();
+  eachCand(r, k => { if (k.e === 's') tseEl.add(k.sqcand); });
+  r.carg[0].agr.forEach((a, i) => tseVag.set(i, num(a.vag)));
+  const qeTSE = num(r.carg[0].qe), vvTSE = num(r.v && r.v.vv);
+  if (!tseEl.size) return { pending: true, qeTSE, vvTSE };
+  const ours = new Set([...al.status].filter(([, v]) => v.s === 'el').map(([sq]) => sq));
+  const diff = [...ours].filter(sq => !tseEl.has(sq)).length + [...tseEl].filter(sq => !ours.has(sq)).length;
+  const agrDiff = [...al.seatsByAgr].filter(([id, n]) => (tseVag.get(id) || 0) !== n).map(([id]) => id);
+  return { pending: false, diff, agrDiff, tseVag, tseCount: tseEl.size, qeTSE, vvTSE };
+}
+
+const STATUS_TXT = { el: 'Eleito até o momento', sup: 'Suplente até o momento', fora: 'Fora até o momento' };
+function statusPill(sq) {
+  if (st.majBySq) {
+    const m = st.majBySq.get(sq);
+    return m ? `<span class="pill ${m.cls}" data-tip="${esc(m.tip)}">${m.cls === 'el' ? '✓ ' : ''}${esc(m.txt)}</span>` : '';
+  }
+  const s = st.alloc && st.alloc.status.get(sq);
+  if (!s) return '';
+  const tip = s.s === 'el' ? `Eleito por ${s.via === 'QP' ? 'quociente partidário' : 'média (sobras)'} pelo cálculo próprio` : s.s === 'sup' ? 'O partido/federação tem cadeira, mas o candidato não está entre os eleitos' : 'O partido/federação não tem cadeira, ou o candidato não pode ser eleito';
+  return `<span class="pill ${s.s}" data-tip="${tip}">${s.s === 'el' ? '✓ ' : ''}${STATUS_TXT[s.s]}</span>`;
+}
+const seatBadge = sg => { const n = st.alloc ? (st.alloc.seatsBySg.get(sg) || 0) : null; return n == null ? '' : `<span class="seats${n ? '' : ' zero'}" data-tip="${n} cadeira${n === 1 ? '' : 's'} do ${esc(sg)} até o momento (cálculo próprio)">${n}</span>`; };
+
+/* ---------------- carga principal ---------------- */
+async function load() {
+  if (!st.config) return;
+  if (st.loading) { st.recarregar = true; return; } // filtro mudou durante uma atualização: refaz logo em seguida
+  // aba de presidente: só precisa dos arquivos de presidente (carregados em loadPres)
+  if (st.view === 'pres' && st.mode === 'live') { renderPres(); loadPres(); setStatus(`atualizado ${new Date().toLocaleTimeString('pt-BR')}`, interval() ? 'on' : ''); return; }
+  st.loading = true;
+  setStatus('atualizando…', 'on');
+  const key = [st.mode, st.cargo, st.uf, st.mun].join('|');
+  if (key !== st.lastKey) { st.prevVotes.clear(); st.prevRank.clear(); st.deltas.clear(); st.rankMoves.clear(); st.result = null; st.lastKey = key; }
+  let err = null;
+  try {
+    await load2022();
+    st.porUf = null;
+    if (st.mode === 'sim') {
+      st.ab = Sim.ab(); st.ufResult = Sim.result(''); st.result = st.mun ? Sim.result(st.mun) : st.ufResult;
+    } else if (mesclando()) {
+      // Todos: junta os arquivos de cada estado do cargo escolhido
+      const fresco = u => u + '?t=' + Date.now();
+      const res = [];
+      await emLotes(ufsAlvo(), 8, async uf => {
+        const cg = cargoDaUf(uf);
+        try { res.push({ uf, r: await getJSON(fresco(`${baseDo(cg)}/dados/${uf}/${uf}-c${pad(cg, 4)}-e${pad(eleDo(cg), 6)}-u.json`)) }); } catch (e) {}
+      });
+      res.sort((a, b) => a.uf.localeCompare(b.uf));
+      st.porUf = res;
+      st.ab = { abr: res.map(x => ({ tpabr: 'uf', cdabr: x.uf, s: x.r.s, e: x.r.e })) };
+      st.ufResult = st.result = res.length ? mesclar(res) : null;
+      st.brResult = null;
+      if (!res.length) { err = new Error('HTTP 404'); err.status = 404; }
+    } else {
+      // ?t= nos arquivos de totais: evita a cópia guardada pela rede de distribuição do TSE (até ~1 min de atraso)
+      const fresco = u => u + '?t=' + Date.now();
+      const jobs = [getJSON(fresco(abUrl())), getJSON(fresco(resultUrl(''))), st.mun ? getJSON(resultUrl(st.mun)) : null, st.cargo === '1' ? getJSON(fresco(brUrl())) : null];
+      const [ab, uf, mu, br] = await Promise.allSettled(jobs);
+      st.ab = ab.status === 'fulfilled' ? ab.value : null;
+      st.ufResult = uf.status === 'fulfilled' ? uf.value : null;
+      st.brResult = br.status === 'fulfilled' ? br.value : null;
+      const res = st.mun ? mu : uf;
+      if (res.status === 'fulfilled') st.result = res.value; else { st.result = null; err = res.reason; }
+    }
+    if (st.wantNum && st.ufResult) {
+      const k = flatCands(st.ufResult).find(c => String(c.n) === st.wantNum);
+      if (k) { st.candSq = k.sq; st.view = 'cand'; applyView(); } else st.candNaoEncontrado = true;
+      st.wantNum = null;
+    }
+    st.alloc = majoritario(st.cargo) || st.porUf ? null : allocate(st.ufResult);
+    // cargos majoritários: situação de cada candidato (presidente pelo resultado nacional)
+    st.majBySq = null;
+    if (st.porUf) {
+      // Todos: cadeiras e situações calculadas estado por estado, depois somadas
+      if (majoritario(st.cargo)) {
+        st.majBySq = new Map();
+        const ref = st.cargo === '1' && st.brResult ? situacoesMajoritarias(st.brResult, '1') : null;
+        for (const { r } of st.porUf) {
+          const m = ref || situacoesMajoritarias(r, st.cargo);
+          if (m) for (const k of flatCands(r)) if (m.has(String(k.n))) st.majBySq.set(k.sq, m.get(String(k.n)));
+        }
+      } else {
+        const comb = { status: new Map(), seatsBySg: new Map(), seatsByAgr: new Map(), nv: 0, vv: 0, qe: null };
+        for (const { r } of st.porUf) {
+          const a = allocate(r); if (!a) continue;
+          a.status.forEach((v, k) => comb.status.set(k, v));
+          a.seatsBySg.forEach((v, k) => comb.seatsBySg.set(k, (comb.seatsBySg.get(k) || 0) + v));
+          comb.nv += a.nv; comb.vv += a.vv;
+        }
+        st.alloc = comb.status.size ? comb : null;
+      }
+    } else if (majoritario(st.cargo) && st.ufResult) {
+      const ref = st.cargo === '1' && st.brResult ? st.brResult : st.ufResult;
+      const porNum = situacoesMajoritarias(ref, st.cargo);
+      if (porNum) { st.majBySq = new Map(); for (const k of flatCands(st.ufResult)) if (porNum.has(String(k.n))) st.majBySq.set(k.sq, porNum.get(String(k.n))); }
+    }
+    st.check = st.alloc && !st.porUf ? checkTSE(st.ufResult, st.alloc) : null;
+    computeDeltas();
+  } catch (e) { err = e; }
+  st.loading = false;
+  render(err);
+  if (st.view === 'cand') loadCandMunis();
+  if (st.view === 'pres') loadPres();
+  const t = new Date().toLocaleTimeString('pt-BR');
+  if (err && err.status === 404) setStatus(`aguardando divulgação · checado ${t}`, '');
+  else if (err) setStatus(`erro ao buscar (${err.message}) · ${t}`, 'err');
+  else setStatus(`atualizado ${t}` + (st.result && st.result.ht ? ` · totalização ${st.result.ht}` : ''), interval() ? 'on' : '');
+  if (st.recarregar) { st.recarregar = false; setTimeout(load, 0); }
+}
+function setStatus(txt, cls) {
+  if (FOTO) { txt = `resultado do TSE em ${FOTO.data}`; cls = ''; }
+  $('status').textContent = txt; $('dot').className = 'dot ' + (cls || '');
+}
+const interval = () => Number($('intervalo').value);
+function schedule() {
+  clearInterval(st.timer);
+  const s = interval();
+  if (s) st.timer = setInterval(() => load(), s * 1000);
+}
+
+function eachCand(r, fn) {
+  const c = r && r.carg && r.carg[0];
+  if (!c) return;
+  for (const a of c.agr || []) for (const p of a.par || []) for (const k of p.cand || []) fn(k, p, a);
+}
+function flatCands(r = st.result) {
+  const out = [];
+  eachCand(r, (k, p, a) => out.push({ sq: k.sqcand, n: k.n, nmu: k.nmu, nm: k.nm, vap: num(k.vap), pv: num(k.pvapn), e: k.e === 's', st: k.st || '', dvt: k.dvt || '', sg: p.sg, agr: a.com || p.sg, uf: k.__uf || '' }));
+  out.sort((x, y) => y.vap - x.vap || String(x.nmu).localeCompare(y.nmu));
+  out.forEach((k, i) => k.rank = i + 1);
+  return out;
+}
+function computeDeltas() {
+  const all = flatCands();
+  const hadPrev = st.prevVotes.size > 0;
+  st.deltas.clear(); st.rankMoves.clear();
+  for (const k of all) {
+    if (hadPrev && st.prevVotes.has(k.sq)) {
+      const d = k.vap - st.prevVotes.get(k.sq); if (d > 0) st.deltas.set(k.sq, d);
+      const m = st.prevRank.get(k.sq) - k.rank; if (m) st.rankMoves.set(k.sq, m);
+    }
+    st.prevVotes.set(k.sq, k.vap); st.prevRank.set(k.sq, k.rank);
+  }
+}
+
+/* ---------------- render: visão geral ---------------- */
+function render(err) {
+  renderBanner(err);
+  updateCandList();
+  if (st.view === 'geral') { renderTiles(); renderCands(); renderParties(); renderMunis(); }
+  else if (st.view === 'pres') renderPres();
+  else renderCandView();
+}
+
+function renderBanner(err) {
+  const b = $('banner');
+  let h = '';
+  if (FOTO) {
+    h = `<div class="banner"><strong>Resultado do TSE em ${esc(FOTO.data)}</strong> (${esc(FOTO.andamento || '')}). Esta página é uma foto da apuração e não atualiza sozinha. Votação por município: presidente em todo o Brasil e os demais cargos no Rio de Janeiro.</div>`;
+  } else if (st.mode === 'sim') {
+    h = `<div class="banner sim"><strong>Modo simulação: dados fictícios.</strong> Candidatos, partidos e votos de “2022” inventados, só para testar a interface. Troque para “Ao vivo (TSE)” para ver a apuração real.</div>`;
+  } else if (err && err.status === 404) {
+    h = `<div class="banner"><strong>O TSE ainda não divulgou votos para este filtro.</strong> A página vai checar de novo automaticamente${interval() ? ` a cada ${interval()} s` : ''}.</div>`;
+  } else if (err) {
+    h = `<div class="banner"><strong>Não foi possível buscar os dados do TSE</strong> (${esc(err.message)}). Nova tentativa na próxima atualização.</div>`;
+  }
+  if (st.mode === 'live' && !H22.ok && !ehTodos() && !majoritario(st.cargo)) h += `<div class="banner">Sem dados de 2022 para este estado (arquivo <code>dados2022/${st.uf}.json</code> não encontrado). As colunas de 2022 ficam ocultas.</div>`;
+  b.innerHTML = h;
+  document.querySelectorAll('.h22').forEach(el => el.classList.toggle('hidden', !has2022()));
+}
+
+function tile(k, v, s, meter) {
+  return `<div class="card tile"><div class="k">${k}</div><div class="v">${v}</div>${s ? `<div class="s">${s}</div>` : ''}${meter != null ? `<div class="meter"><i style="width:${Math.min(100, meter)}%"></i></div>` : ''}</div>`;
+}
+function renderTiles() {
+  const r = st.result;
+  const abEntry = st.ab && st.ab.abr && st.ab.abr.find(a => st.mun ? (a.tpabr === 'mun' && a.cdabr === st.mun) : a.tpabr === 'uf');
+  const s = (r && r.s) || (abEntry && abEntry.s) || {};
+  const e = (r && r.e) || (abEntry && abEntry.e) || {};
+  const v = (r && r.v) || {};
+  const c = r && r.carg && r.carg[0];
+  const lugar = st.mun ? (munInfo()?.nm || '') : lugarNome();
+  let h = tile('Seções totalizadas · ' + esc(lugar), pct(num(s.pstn)), `${fmt(s.st)} de ${fmt(s.ts)}`, num(s.pstn));
+  h += tile('Comparecimento', fmt(e.c), e.c ? `${pct(num(e.pcn))} · abstenção ${pct(num(e.pan))}` : `eleitorado ${fmt(e.te)}`);
+  h += tile('Votos válidos', fmt(v.vv), v.vv ? pct(num(v.pvvn)) + ' do total' : '—');
+  h += tile('Brancos / nulos', v.tv ? `${fmt(v.vb)} / ${fmt(v.tvn)}` : '—', v.tv ? `${pct(num(v.pvbn))} / ${pct(num(v.ptvnn))}` : '');
+  const al = st.alloc;
+  const ufc = st.ufResult && st.ufResult.carg && st.ufResult.carg[0];
+  if (ufc && majoritario(st.cargo)) h += tile('Vagas', fmt(ufc.nv), st.cargo === '5' ? (st.porUf ? 'os 2 mais votados de cada estado se elegem' : `os ${ufc.nv} mais votados se elegem`) : 'mais da metade dos válidos vence no 1º turno');
+  else if (ufc && st.porUf) h += tile(`Vagas · ${esc(lugarNome())}`, fmt(ufc.nv), `soma de ${st.porUf.length} estados · cadeiras calculadas em cada estado`);
+  else if (ufc) h += tile('Vagas no estado', fmt(ufc.nv), al ? `quociente eleitoral ${fmt(al.qe)} (cálculo próprio)` : 'quociente: aguardando votos');
+  $('tiles').innerHTML = h;
+}
+
+function filtered() {
+  const q = norm(st.busca);
+  return flatCands().filter(k =>
+    (!st.partido || k.sg === st.partido || k.agr === st.partido) &&
+    (!st.soEleitos || st.alloc?.status.get(k.sq)?.s === 'el') &&
+    (!q || norm(k.nmu).includes(q) || norm(k.nm).includes(q) || String(k.n).startsWith(q)));
+}
+
+function h22Cells(k) {
+  if (!has2022()) return '';
+  const h = hist(k);
+  if (!h) return `<td class="r rk">—</td><td class="r rk">—</td>`;
+  const v22 = st.mun ? (h.mun[st.mun] || 0) : h.total;
+  const tag = h.cargo !== st.cargo ? `<span class="tag" title="Em 2022 concorreu a ${CARGOS[h.cargo] || 'outro cargo'}">${CARGO_SIGLA[h.cargo] || '?'}</span>` : '';
+  return `<td class="r" data-tip="2022: ${esc(h.nmu)} (${esc(h.sg)}) · ${esc(CARGOS[h.cargo] || '')}&#10;${esc(h.sit)}">${fmt(v22)}${tag}</td><td class="r">${cmpCell(k.vap, expected(h, st.mun))}</td>`;
+}
+
+function renderCands() {
+  const all = flatCands();
+  updatePartyOptions(all);
+  const rows = filtered();
+  const lugar = st.mun ? munInfo()?.nm : lugarNome();
+  const cols = has2022() ? 9 : 7;
+  $('candTitle').textContent = `${st.porUf && st.cargo === '7' ? 'Deputado Estadual/Distrital' : CARGOS[st.cargo]} · ${lugar || st.uf.toUpperCase()}`;
+  $('candCount').textContent = all.length ? `${fmt(rows.length)} de ${fmt(all.length)} candidatos · clique para ver por município` : '';
+  if (!all.length) {
+    $('candBody').innerHTML = `<tr><td colspan="${cols}" class="empty">${st.mode === 'live' ? 'Sem votos divulgados ainda para este filtro.' : 'Carregando…'}</td></tr>`;
+    $('more').innerHTML = ''; return;
+  }
+  const max = all[0].vap || 1;
+  const show = rows.slice(0, st.limit);
+  $('candBody').innerHTML = show.map(k => {
+    const d = st.deltas.get(k.sq), m = st.rankMoves.get(k.sq);
+    const mv = m ? `<span class="${m > 0 ? 'up' : 'dn'}">${m > 0 ? '▲' : '▼'}${Math.abs(m)}</span>` : '';
+    const situ = statusPill(k.sq);
+    return `<tr class="click${d ? ' hl' : ''}" data-sq="${esc(k.sq)}">
+      <td class="r rk">${k.rank}º ${mv}</td>
+      <td><div class="cand">${fotoTag(k.sq, k.uf)}<div style="min-width:0"><div class="nm">${esc(k.nmu)} <span class="rk">${k.n}</span>${k.uf ? `<span class="tag">${k.uf.toUpperCase()}</span>` : ''}</div><div class="full">${esc(k.nm)}</div></div></div></td>
+      <td class="hide-sm" style="white-space:nowrap">${esc(k.sg)}${seatBadge(k.sg)}</td>
+      <td class="r">${fmt(k.vap)}${d ? `<div class="delta">+${fmt(d)}</div>` : ''}</td>
+      <td class="r">${pct(k.pv)}</td>
+      ${h22Cells(k)}
+      <td class="barcell hide-sm"><div class="bar"><i style="width:${(k.vap / max * 100).toFixed(2)}%"></i></div></td>
+      <td>${situ}</td></tr>`;
+  }).join('') || `<tr><td colspan="${cols}" class="empty">Nenhum candidato com esses filtros.</td></tr>`;
+  $('more').innerHTML = rows.length > st.limit ? `<button class="btn" id="moreBtn">Mostrar mais (${fmt(rows.length - st.limit)} restantes)</button>` : '';
+  if ($('moreBtn')) $('moreBtn').onclick = () => { st.limit += 100; renderCands(); };
+}
+
+function updatePartyOptions(all) {
+  const sel = $('partido');
+  const sgs = [...new Set(all.map(k => k.sg))].sort();
+  const sig = sgs.join(',');
+  if (sel.dataset.sig === sig) return;
+  sel.dataset.sig = sig;
+  sel.innerHTML = '<option value="">Todos</option>' + sgs.map(s => `<option${s === st.partido ? ' selected' : ''}>${esc(s)}</option>`).join('');
+  if (st.partido && !sgs.includes(st.partido)) st.partido = '';
+}
+
+function renderParties() {
+  const c = st.result && st.result.carg && st.result.carg[0];
+  if (!c) { $('partyBody').innerHTML = `<tr><td colspan="3" class="empty">—</td></tr>`; $('partyNote').textContent = ''; $('checkBox').innerHTML = ''; return; }
+  const al = st.alloc;
+  if (majoritario(st.cargo)) { renderPartidosMajoritarios(); return; }
+  $('partyHead').innerHTML = `<tr><th>Agremiação</th><th class="r">Votos</th><th class="r" title="Cadeiras pelo cálculo próprio">Cadeiras</th></tr>`;
+  // agrupa pelo nome da agremiação (no modo Todos, o mesmo partido aparece em vários estados)
+  const grupos = new Map();
+  for (const a of c.agr || []) {
+    const nome = a.com || a.nm;
+    const g = grupos.get(nome) || grupos.set(nome, { nm: nome, full: a.nm, votos: 0, sgs: [] }).get(nome);
+    for (const p of a.par || []) { g.votos += num(p.tval); for (const k of p.cand || []) g.votos += num(k.vap); if (!g.sgs.includes(p.sg)) g.sgs.push(p.sg); }
+  }
+  const rows = [...grupos.values()].map(g => {
+    const seats = al ? g.sgs.reduce((s, sg) => s + (al.seatsBySg.get(sg) || 0), 0) : 0;
+    const porSg = al && g.sgs.length > 1 ? g.sgs.map(sg => `${sg}: ${al.seatsBySg.get(sg) || 0}`).join(' · ') : '';
+    return { ...g, seats, porSg };
+  }).sort((x, y) => y.seats - x.seats || y.votos - x.votos);
+  $('partyNote').textContent = majoritario(st.cargo) ? 'votos por partido'
+    : st.porUf ? (al ? `cadeiras somando os estados · ${lugarNome()}` : 'cadeiras: aguardando votos')
+    : (st.mun ? 'votos no município · ' : '') + (al ? `cadeiras no estado · QE ${fmt(al.qe)}` : 'cadeiras: aguardando votos');
+  $('partyBody').innerHTML = rows.map(r => `<tr class="click" data-party="${esc(r.sgs.length === 1 ? r.sgs[0] : r.nm)}" data-tip="${esc(r.full)}&#10;${esc(r.sgs.join(', '))}${r.porSg ? '&#10;Cadeiras por partido: ' + esc(r.porSg) : ''}">
+      <td>${esc(r.nm)}${r.porSg ? `<div class="rk">${esc(r.porSg)}</div>` : ''}</td><td class="r">${fmt(r.votos)}</td><td class="r"><strong>${al ? r.seats : '–'}</strong></td></tr>`).join('');
+  $('checkBox').innerHTML = checkHtml();
+}
+
+/* governador / senador / presidente: uma linha por partido do candidato (não por coligação),
+   contando quantos estão eleitos (ou venceriam no 1º turno) e quantos vão ao 2º turno, até o momento */
+function renderPartidosMajoritarios() {
+  const sen = st.cargo === '5';
+  const por = new Map();
+  for (const k of flatCands(st.result)) {
+    const p = por.get(k.sg) || por.set(k.sg, { sg: k.sg, votos: 0, el: 0, t2: 0, nomesEl: [], nomesT2: [] }).get(k.sg);
+    p.votos += k.vap;
+    const m = st.mun ? null : st.majBySq && st.majBySq.get(k.sq); // situação vale para o estado, não para o município
+    const quem = `${k.nmu}${k.uf ? ' (' + k.uf.toUpperCase() + ')' : ''}`;
+    if (m && m.cls === 'el') { p.el++; p.nomesEl.push(quem); }
+    if (m && m.cls === 'sup') { p.t2++; p.nomesT2.push(quem); }
+  }
+  const rows = [...por.values()].sort((a, b) => b.el - a.el || b.t2 - a.t2 || b.votos - a.votos);
+  const n = v => v ? `<strong>${v}</strong>` : '<span class="rk">–</span>';
+  $('partyHead').innerHTML = sen
+    ? `<tr><th>Partido</th><th class="r">Votos</th><th class="r" title="Senadores eleitos até o momento">Eleitos</th></tr>`
+    : `<tr><th>Partido</th><th class="r">Votos</th><th class="r" title="Venceriam no 1º turno (mais da metade dos válidos)">1º turno</th><th class="r" title="Entre os 2 mais votados, sem maioria: vão ao 2º turno">2º turno</th></tr>`;
+  $('partyNote').textContent = st.mun ? 'votos no município' : `${sen ? 'senadores eleitos' : CARGOS[st.cargo].toLowerCase() + 'es'} por partido · até o momento`;
+  $('partyBody').innerHTML = rows.map(r => {
+    const tip = [r.nomesEl.length ? (sen ? 'Eleitos: ' : 'Venceriam no 1º turno: ') + r.nomesEl.join(', ') : '', r.nomesT2.length ? '2º turno: ' + r.nomesT2.join(', ') : ''].filter(Boolean).join('&#10;');
+    return `<tr class="click" data-party="${esc(r.sg)}"${tip ? ` data-tip="${esc(tip).replace(/&amp;#10;/g, '&#10;')}"` : ''}><td>${esc(r.sg)}</td><td class="r">${fmt(r.votos)}</td><td class="r">${n(r.el)}</td>${sen ? '' : `<td class="r">${n(r.t2)}</td>`}</tr>`;
+  }).join('');
+  $('checkBox').innerHTML = '';
+}
+
+function checkHtml() {
+  const al = st.alloc, ck = st.check;
+  if (!al) return '';
+  if (st.mode === 'sim') return `<div class="check">Simulação: sem conferência com o TSE.</div>`;
+  if (!ck) return '';
+  const qe = ck.qeTSE ? (ck.qeTSE === al.qe ? `QE confere com o TSE (${fmt(al.qe)})` : `QE próprio ${fmt(al.qe)} × TSE ${fmt(ck.qeTSE)}`) : '';
+  const vv = ck.vvTSE && ck.vvTSE !== al.vv ? ` · votos válidos próprios ${fmt(al.vv)} × TSE ${fmt(ck.vvTSE)}` : '';
+  if (ck.pending) return `<div class="check" data-tip="O cálculo é sempre próprio. Quando o TSE marcar eleitos no arquivo, a página compara automaticamente.">Conferência com o TSE: o TSE ainda não marcou eleitos neste arquivo.${qe ? '<br>' + qe + vv : ''}</div>`;
+  if (!ck.diff && !ck.agrDiff.length) return `<div class="check ok">✓ Confere com o TSE: mesmos ${ck.tseCount} eleitos e mesmas cadeiras por agremiação.${qe ? '<br>' + qe : ''}</div>`;
+  return `<div class="check bad">⚠ Diferença com o TSE: ${ck.diff} candidato(s) e ${ck.agrDiff.length} agremiação(ões) divergem.${qe ? '<br>' + qe + vv : ''}</div>`;
+}
+
+function renderMunis() {
+  $('andTitulo').textContent = ehTodos() ? 'Andamento por estado' : 'Andamento por município';
+  if (ehTodos()) {
+    const abMap = new Map(((st.ab && st.ab.abr) || []).filter(a => a.tpabr === 'uf').map(a => [a.cdabr, a]));
+    const q = norm($('munBusca').value);
+    const list = ufsAlvo().map(cd => ({ cd, nm: ufInfo(cd).ds, a: abMap.get(cd) })).filter(x => !q || norm(x.nm).includes(q))
+      .map(x => ({ ...x, p: x.a ? num(x.a.s?.pstn) : null, te: x.a ? num(x.a.e?.te) : 0 }))
+      .sort(st.muniSort === 'nm' ? (x, y) => x.nm.localeCompare(y.nm) : (x, y) => y.te - x.te);
+    $('muniBody').innerHTML = list.map(m => `<tr class="click" data-uf="${m.cd}">
+      <td>${esc(m.nm.charAt(0) + m.nm.slice(1).toLowerCase())} <span class="rk">${m.cd.toUpperCase()}</span></td>
+      <td class="r">${m.p == null ? '—' : pct(m.p)}</td>
+      <td class="r" style="width:70px"><div class="meter" style="margin:0"><i style="width:${m.p || 0}%"></i></div></td></tr>`).join('');
+    return;
+  }
+  const u = ufInfo(st.uf);
+  if (!u) { $('muniBody').innerHTML = ''; return; }
+  const abMap = new Map(((st.ab && st.ab.abr) || []).filter(a => a.tpabr === 'mun').map(a => [a.cdabr, a]));
+  const q = norm($('munBusca').value);
+  const list = u.mu.filter(m => !q || norm(m.nm).includes(q)).map(m => {
+    const a = abMap.get(m.cd);
+    return { cd: m.cd, nm: m.nm, cap: m.c === 's', p: a ? num(a.s.pstn) : null, te: a ? num(a.e.te) : 0 };
+  });
+  list.sort(st.muniSort === 'nm' ? (x, y) => x.nm.localeCompare(y.nm) : (x, y) => (y.cap - x.cap) || (y.te - x.te));
+  const todos = `<tr class="click${!st.mun ? ' hl' : ''}" data-mun=""><td><strong>Todo o estado</strong></td><td colspan="2"></td></tr>`;
+  $('muniBody').innerHTML = todos + list.map(m => `<tr class="click${m.cd === st.mun ? ' hl' : ''}" data-mun="${m.cd}">
+      <td>${esc(m.nm)}${m.cap ? ' <span class="rk">capital</span>' : ''}</td>
+      <td class="r">${m.p == null ? '—' : pct(m.p)}</td>
+      <td class="r" style="width:70px"><div class="meter" style="margin:0"><i style="width:${m.p || 0}%"></i></div></td></tr>`).join('');
+}
+
+/* ---------------- por candidato ---------------- */
+/* cache dos arquivos por município: só baixa de novo quando o nº de seções totalizadas mudou */
+const MC = { key: '', cache: new Map(), running: false, done: 0, total: 0, again: false };
+function votesOf(r) {
+  const m = new Map(); eachCand(r, k => m.set(k.sqcand, num(k.vap)));
+  return { votes: m, vv: num(r && r.v && r.v.vv), pst: num(r && r.s && r.s.pstn) };
+}
+async function loadCandMunis() {
+  if (MC.running) { MC.again = true; return; }
+  const key = [st.mode, st.uf, st.cargo].join('|');
+  if (MC.key !== key) { MC.key = key; MC.cache.clear(); }
+  if (mesclando()) { renderCandView(); return; } // modo Todos: o candidato escolhido leva para o estado dele
+  const lista = unidades(); if (!lista.length) return;
+  const pm = pstByMun();
+  const todo = lista.filter(m => { const s = pm.get(m.cd)?.st || 0; const c = MC.cache.get(m.cd); return s > 0 && (!c || c.st !== s); });
+  if (!todo.length) { renderCandView(); return; }
+  MC.running = true; MC.done = 0; MC.total = todo.length;
+  let i = 0, lastPaint = 0;
+  const worker = async () => {
+    while (i < todo.length) {
+      const m = todo[i++];
+      if (MC.key !== key) return;
+      const s = pm.get(m.cd).st;
+      try {
+        const r = st.mode === 'sim' ? Sim.result(m.cd) : await getJSON(unidadeUrl(m.cd));
+        MC.cache.set(m.cd, { st: s, ...votesOf(r) });
+      } catch (e) {}
+      MC.done++;
+      if (Date.now() - lastPaint > 700) { lastPaint = Date.now(); renderCandView(); }
+    }
+  };
+  await Promise.all(Array.from({ length: 8 }, worker));
+  MC.running = false;
+  renderCandView();
+  if (MC.again) { MC.again = false; loadCandMunis(); }
+}
+
+/* posição do candidato entre todos do mesmo cargo no município (empates dividem a posição) */
+function posNaCidade(cd, sq) {
+  const c = MC.cache.get(cd);
+  const v = c && c.votes.get(sq);
+  if (!v) return null;
+  let acima = 0;
+  for (const x of c.votes.values()) if (x > v) acima++;
+  return acima + 1;
+}
+function candBySq(sq) { return flatCands(st.ufResult).find(k => k.sq === sq); }
+const candLabel = k => `${k.nmu} · ${k.n} · ${k.sg}${k.uf ? ' · ' + k.uf.toUpperCase() : ''}`;
+function updateCandList() {
+  const all = flatCands(st.ufResult);
+  const sig = st.uf + st.regiao + st.cargo + st.mode + all.length;
+  const dl = $('candList');
+  if (dl.dataset.sig !== sig) {
+    dl.dataset.sig = sig;
+    dl.innerHTML = [...all].sort((a, b) => a.nmu.localeCompare(b.nmu)).map(k => `<option value="${esc(candLabel(k))}">`).join('');
+  }
+  const k = st.candSq && candBySq(st.candSq);
+  if (k && document.activeElement !== $('candSel')) $('candSel').value = candLabel(k);
+}
+/* abre um candidato; no modo Todos (juntando estados) leva para o estado dele, onde há dados por município */
+function abrirCandidato(k) {
+  if (mesclando() && k.uf) {
+    st.uf = k.uf; fillRegiao(); fillUf(); ufChanged();
+    st.candSq = k.sq; st.view = 'cand';
+    location.hash = 'c=' + k.sq;
+    applyView(); persist(); load();
+    return;
+  }
+  openCand(k.sq);
+}
+
+function renderCandView() {
+  if (st.view !== 'cand') return;
+  const k = st.candSq && candBySq(st.candSq);
+  $('candEmpty').classList.toggle('hidden', !!k);
+  $('candArea').classList.toggle('hidden', !k);
+  if (!k) {
+    $('candEmpty').textContent = mesclando() ? `Escolha um candidato de qualquer estado no campo acima (${lugarNome()}): a página abre o estado dele com a votação por município.`
+      : st.candSq && st.ufResult ? 'Candidato não encontrado neste estado/cargo.' : 'Escolha um candidato no campo acima ou clique em um nome na Visão geral.';
+    return;
+  }
+
+  const h = has2022() ? hist(k) : null;
+  const s = (st.ufResult && st.ufResult.s) || {};
+  const esp = expected(h);
+  $('candHero').innerHTML = `${st.mode === 'live' ? `<img src="${fotoUrl(k.sq)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">` : '<span class="ph"></span>'}
+    <div style="min-width:0"><h2>${esc(k.nmu)} <span class="rk" style="font-size:16px">${k.n}</span></h2>
+    <div class="sub">${esc(k.nm)} · ${esc(k.sg)}${k.agr !== k.sg ? ' · ' + esc(k.agr) : ''} · ${CARGOS[st.cargo]} · ${esc(lugarNome())}</div>
+    <div style="margin-top:6px">${statusPill(k.sq)} <span class="rk">${esc(k.sg)}</span>${seatBadge(k.sg)} ${k.vap ? `<span class="rk">${k.rank}º ${ehTodos() ? 'no Brasil' : 'no estado'}</span>` : ''}</div></div>
+    <button class="btn" id="copyResumo" style="margin-left:auto" data-tip="Copia o texto que o script envia pelo WhatsApp">Copiar resumo WhatsApp</button>`;
+  let t = tile('Votos 2026', fmt(k.vap), `${pct(k.pv)} dos válidos`);
+  t += tile(`Urnas apuradas ${ehTodos() ? 'no Brasil' : 'no estado'}`, pct(num(s.pstn)), `${fmt(s.st)} de ${fmt(s.ts)} seções`, num(s.pstn));
+  if (has2022()) {
+    if (h) {
+      t += tile('Votos 2022', fmt(h.total), `${esc(CARGOS[h.cargo] || '')} · ${esc(h.sit)}`);
+      t += `<div class="card tile"><div class="k">vs 2022 (pelo ritmo das urnas)</div><div class="v">${cmpCell(k.vap, esp, '&#10;Soma por município: votos 2022 × % de urnas apuradas')}</div><div class="s">esperado até agora: ${esp != null ? fmt(Math.round(esp)) : '—'}</div></div>`;
+    } else t += tile('Votos 2022', '—', 'não concorreu em 2022 neste estado (ou nome diferente)');
+  }
+  $('candTiles').innerHTML = t;
+
+  /* tabela por município (no modo Todos, por estado) */
+  $('cmTitulo').textContent = ehTodos() ? 'Votação por estado' : 'Votação por município';
+  const pm = pstByMun();
+  const q = norm($('cmBusca').value);
+  let rows = unidades().map(m => {
+    const c = MC.cache.get(m.cd);
+    const v = c ? (c.votes.get(k.sq) || 0) : 0;
+    const p = pm.get(m.cd)?.p || 0;
+    const v22 = h ? (h.mun[m.cd] || 0) : 0;
+    const exp = h ? v22 * p : null;
+    return { cd: m.cd, nm: m.nm, p, v, pv: c && c.vv ? v / c.vv * 100 : 0, v22, exp, d: exp > 0 ? v / exp - 1 : -Infinity, pending: p > 0 && !c };
+  }).filter(r => (r.v > 0 || r.v22 > 0 || r.pending) && (!q || norm(r.nm).includes(q)));
+  const key = st.cmSort, dir = st.cmDir;
+  if (key === 'pos') rows.forEach(r => r.pos = posNaCidade(r.cd, k.sq));
+  rows.sort((a, b) => key === 'nm' ? a.nm.localeCompare(b.nm) * -dir
+    : key === 'pos' ? ((a.pos ?? 1e9) - (b.pos ?? 1e9)) * (dir < 0 ? 1 : -1) || b.v - a.v
+    : ((b[key] ?? -1) - (a[key] ?? -1)) * -dir || b.v22 - a.v22);
+  document.querySelectorAll('#viewCand th[data-sort]').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.sort === key);
+    th.textContent = th.textContent.replace(/ [▲▼]$/, '') + (th.dataset.sort === key ? (dir < 0 ? ' ▼' : ' ▲') : '');
+  });
+  const max = Math.max(1, ...rows.map(r => Math.max(r.v, r.exp || 0)));
+  const un = ehTodos() ? 'estados' : 'municípios';
+  $('cmProg').textContent = MC.running ? `carregando ${un} ${MC.done}/${MC.total}…` : `${fmt(rows.length)} ${un} com voto${has2022() ? ' em 2026 ou 2022' : ''}`;
+  const cols = has2022() ? 9 : 6;
+  $('cmBody').innerHTML = rows.slice(0, st.cmLimit).map(r => `<tr>
+      <td>${esc(r.nm)}</td>
+      <td class="r">${r.p ? pct(r.p * 100) : '<span class="rk">0%</span>'}</td>
+      <td class="r">${r.pending ? '<span class="rk">…</span>' : fmt(r.v)}</td>
+      <td class="r">${(() => { const p = r.pos !== undefined ? r.pos : posNaCidade(r.cd, k.sq); return p ? p + 'º' : '<span class="rk">—</span>'; })()}</td>
+      <td class="r hide-sm">${r.pv ? pct(r.pv) : '<span class="rk">—</span>'}</td>
+      ${has2022() ? `<td class="r">${fmt(r.v22)}</td><td class="r hide-sm">${r.exp != null ? fmt(Math.round(r.exp)) : '—'}</td><td class="r">${cmpCell(r.v, r.exp)}</td>` : ''}
+      <td class="barcell hide-sm"><div class="bar"><i style="width:${(r.v / max * 100).toFixed(2)}%"></i>${r.exp ? `<b style="left:calc(${(r.exp / max * 100).toFixed(2)}% - 1px)"></b>` : ''}</div></td></tr>`).join('')
+    || `<tr><td colspan="${cols}" class="empty">Nenhum voto apurado ainda para este candidato.</td></tr>`;
+  $('cmMore').innerHTML = rows.length > st.cmLimit ? `<button class="btn" id="cmMoreBtn">Mostrar mais (${fmt(rows.length - st.cmLimit)} restantes)</button>` : '';
+  if ($('cmMoreBtn')) $('cmMoreBtn').onclick = () => { st.cmLimit += 200; renderCandView(); };
+}
+
+function openCand(sq) {
+  st.candSq = sq; st.view = 'cand'; st.cmLimit = 100;
+  if (location.hash !== '#c=' + sq) location.hash = 'c=' + sq;
+  applyView(); render(); loadCandMunis();
+}
+function applyView() {
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.view === st.view));
+  $('viewGeral').classList.toggle('hidden', st.view !== 'geral');
+  $('viewCand').classList.toggle('hidden', st.view !== 'cand');
+  $('viewPres').classList.toggle('hidden', st.view !== 'pres');
+  document.querySelectorAll('.geral-only').forEach(el => el.classList.toggle('hidden', st.view !== 'geral'));
+  document.querySelectorAll('.cand-only').forEach(el => el.classList.toggle('hidden', st.view !== 'cand'));
+  $('cargo').closest('.f').classList.toggle('hidden', st.view === 'pres');
+}
+
+/* ---------------- presidente · Brasil ---------------- */
+const P = { br: null, ufs: new Map(), ab: null, cidUf: '', cid: new Map(), running: false, again: false, done: 0, total: 0, cidLimit: 100 };
+const presUrl = lugar => `${baseDo('1')}/dados/${lugar.slice(0, 2)}/${lugar}-c0001-e${pad(ELE_PRES, 6)}-u.json`;
+async function emLotes(itens, n, fn) { let i = 0; await Promise.all(Array.from({ length: n }, async () => { while (i < itens.length) await fn(itens[i++]); })); }
+async function loadPres() {
+  if (st.mode === 'sim') { renderPres(); return; }
+  if (P.running) { P.again = true; return; }
+  P.running = true;
+  const fresco = u => u + '?t=' + Date.now();
+  try {
+    const ufsLista = [...ufs().map(u => u.cd), 'zz'];
+    const [br] = await Promise.allSettled([getJSON(fresco(presUrl('br')))]);
+    if (br.status === 'fulfilled') P.br = br.value;
+    await emLotes(ufsLista, 8, async uf => { try { P.ufs.set(uf, await getJSON(fresco(presUrl(uf)))); } catch (e) {} });
+    renderPres();
+    if (ehTodos()) {
+      // Todos: as 200 maiores cidades (por eleitorado) do Brasil ou da região; lista refeita a cada 2 min
+      const chave = TODOS + st.regiao;
+      if (P.cidUf !== chave) { P.cidUf = chave; P.cid.clear(); P.cidLimit = 100; P.cidT = 0; }
+      if (Date.now() - (P.cidT || 0) > 120000) {
+        P.cidT = Date.now();
+        const todas = [];
+        await emLotes(ufsAlvo(), 6, async uf => {
+          try {
+            const ab = await getJSON(fresco(`${baseDo('1')}/dados/${uf}/${uf}-e${pad(ELE_PRES, 6)}-ab.json`));
+            for (const a of ab.abr) if (a.tpabr === 'mun') todas.push({ uf, cd: a.cdabr, te: num(a.e?.te), st: num(a.s?.st) });
+          } catch (e) {}
+        });
+        P.cidLista = todas.sort((a, b) => b.te - a.te).slice(0, 200);
+        const todo = P.cidLista.filter(m => m.st > 0 && P.cid.get(m.uf + m.cd)?.st !== m.st);
+        P.done = 0; P.total = todo.length;
+        let pinta = 0;
+        await emLotes(todo, 8, async m => {
+          try { P.cid.set(m.uf + m.cd, { st: m.st, r: await getJSON(presUrl(m.uf + m.cd)) }); } catch (e) {}
+          P.done++;
+          if (Date.now() - pinta > 800) { pinta = Date.now(); renderPresCidades(); }
+        });
+      }
+      return;
+    }
+    // cidades do estado escolhido: baixa de novo só as que tiveram seções novas
+    const uf = st.uf;
+    if (P.cidUf !== uf) { P.cidUf = uf; P.cid.clear(); P.cidLimit = 100; }
+    try { P.ab = await getJSON(fresco(`${baseDo('1')}/dados/${uf}/${uf}-e${pad(ELE_PRES, 6)}-ab.json`)); } catch (e) { P.ab = null; }
+    const pm = new Map(((P.ab && P.ab.abr) || []).filter(a => a.tpabr === 'mun').map(a => [a.cdabr, num(a.s.st)]));
+    const todo = (ufInfo(uf)?.mu || []).filter(m => (pm.get(m.cd) || 0) > 0 && P.cid.get(m.cd)?.st !== pm.get(m.cd));
+    P.done = 0; P.total = todo.length;
+    let pinta = 0;
+    await emLotes(todo, 8, async m => {
+      try { P.cid.set(m.cd, { st: pm.get(m.cd), r: await getJSON(presUrl(uf + m.cd)) }); } catch (e) {}
+      P.done++;
+      if (Date.now() - pinta > 800) { pinta = Date.now(); renderPresCidades(); }
+    });
+  } finally {
+    P.running = false;
+    renderPres();
+    if (P.again) { P.again = false; setTimeout(loadPres, 0); }
+  }
+}
+// top 3 nacionais (ordem fixa de cor) para as colunas de estado e cidade
+function presTop() { return P.br ? flatCands(P.br).slice(0, 3) : []; }
+const curto = nmu => nmu.length > 12 ? nmu.trim().split(/\s+/).pop() : nmu;
+function pctDe(r, n) { const k = r && flatCands(r).find(c => String(c.n) === String(n)); return k ? k.pv : 0; }
+function stackBar(r, top) {
+  const pcs = top.map(c => pctDe(r, c.n)); const outros = Math.max(0, 100 - pcs.reduce((s, x) => s + x, 0));
+  return `<div class="stack">${pcs.map((p, i) => `<i style="width:${p}%;background:var(--c${i + 1})"></i>`).join('')}<i style="width:${outros}%;background:var(--c-outros)"></i></div>`;
+}
+function liderDe(r) { const k = r && flatCands(r)[0]; return k && k.vap ? k : null; }
+/* soma os resultados de presidente de vários estados (para o recorte por região) */
+function somaPres(lista) {
+  const rs = lista.map(uf => P.ufs.get(uf)).filter(Boolean);
+  if (!rs.length) return null;
+  const soma = f => rs.reduce((s, r) => s + num(f(r)), 0);
+  const pc = (x, y) => String(y ? x / y * 100 : 0);
+  const ts = soma(r => r.s?.ts), stt = soma(r => r.s?.st), est = soma(r => r.e?.est) || soma(r => r.e?.te), c = soma(r => r.e?.c), a = soma(r => r.e?.a);
+  const tv = soma(r => r.v?.tv), vv = soma(r => r.v?.vv), vb = soma(r => r.v?.vb), tvn = soma(r => r.v?.tvn);
+  const porNum = new Map();
+  for (const r of rs) eachCand(r, (k, p) => {
+    const x = porNum.get(k.n) || porNum.set(k.n, { k: { ...k, vap: 0 }, sg: p.sg }).get(k.n);
+    x.k.vap = String(num(x.k.vap) + num(k.vap));
+  });
+  const cand = [...porNum.values()].map(x => ({ ...x.k, pvapn: pc(num(x.k.vap), vv), __sg: x.sg }));
+  return { ht: rs.map(r => r.ht || '').sort().pop(),
+    s: { ts: String(ts), st: String(stt), pstn: pc(stt, ts) },
+    e: { te: String(soma(r => r.e?.te)), est: String(est), c: String(c), a: String(a), pcn: pc(c, est), pan: pc(a, est) },
+    v: { tv: String(tv), vv: String(vv), pvvn: pc(vv, tv), vb: String(vb), pvbn: pc(vb, tv), tvn: String(tvn), ptvnn: pc(tvn, tv) },
+    carg: [{ cd: '1', nv: '1', agr: cand.map(k => ({ com: k.__sg, par: [{ sg: k.__sg, cand: [k] }] })) }] };
+}
+function renderPres() {
+  if (st.view !== 'pres') return;
+  // com região escolhida, os números do topo são a soma dos estados da região; a situação (2º turno) é sempre a nacional
+  const regiao = st.regiao ? REGIOES[st.regiao] : null;
+  const br = regiao && P.br ? somaPres(regiao.ufs) : P.br;
+  if (!br) { $('presBody').innerHTML = `<tr><td colspan="8" class="empty">${st.mode === 'sim' ? 'A aba de presidente usa dados reais do TSE; volte para “Ao vivo (TSE)”.' : 'Carregando…'}</td></tr>`; return; }
+  const s = br.s || {}, e = br.e || {}, v = br.v || {};
+  $('presTitulo').textContent = regiao ? `Presidente · Região ${regiao.nm}` : 'Presidente · Brasil';
+  let t = tile(`Seções totalizadas · ${regiao ? 'Região ' + regiao.nm : 'Brasil'}`, pct(num(s.pstn)), `${fmt(s.st)} de ${fmt(s.ts)}`, num(s.pstn));
+  t += tile('Comparecimento', fmt(e.c), e.c ? `${pct(num(e.pcn))} · abstenção ${pct(num(e.pan))}` : '');
+  t += tile('Votos válidos', fmt(v.vv), v.vv ? pct(num(v.pvvn)) + ' do total' : '—');
+  t += tile('Brancos / nulos', v.tv ? `${fmt(v.vb)} / ${fmt(v.tvn)}` : '—', v.tv ? `${pct(num(v.pvbn))} / ${pct(num(v.ptvnn))}` : '');
+  $('presTiles').innerHTML = t;
+  const sit = situacoesMajoritarias(P.br, '1'); // situação sempre pelo resultado nacional
+  const lidera = new Map();
+  for (const [uf, r] of P.ufs) { if (uf === 'zz' || (regiao && !regiao.ufs.includes(uf))) continue; const l = liderDe(r); if (l) lidera.set(String(l.n), (lidera.get(String(l.n)) || 0) + 1); }
+  const cs = flatCands(br), max = cs[0]?.vap || 1, top = presTop();
+  $('presNote').textContent = regiao ? `votos na região · situação pelo resultado nacional · totalização ${br.ht || ''}` : `totalização ${br.ht || br.hg || ''}`;
+  $('presBody').innerHTML = cs.map(k => {
+    const m = sit && sit.get(String(k.n)); const ti = top.findIndex(c => c.n === k.n);
+    return `<tr><td class="r rk">${k.rank}º</td>
+      <td><div class="cand"><img loading="lazy" src="${baseDo('1')}/fotos/br/${k.sq}.jpeg" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))"><div style="min-width:0"><div class="nm">${ti >= 0 ? `<span class="sw" style="background:var(--c${ti + 1})"></span>` : ''}${esc(k.nmu)} <span class="rk">${k.n}</span></div><div class="full">${esc(k.nm)}</div></div></div></td>
+      <td class="hide-sm">${esc(k.sg)}</td><td class="r">${fmt(k.vap)}</td><td class="r">${pct(k.pv)}</td>
+      <td class="r">${lidera.get(String(k.n)) ? lidera.get(String(k.n)) + ' UF' : '<span class="rk">—</span>'}</td>
+      <td class="barcell hide-sm"><div class="bar"><i style="width:${(k.vap / max * 100).toFixed(2)}%"></i></div></td>
+      <td>${m ? `<span class="pill ${m.cls}" data-tip="${esc(m.tip)}">${m.cls === 'el' ? '✓ ' : ''}${esc(m.txt)}</span>` : ''}</td></tr>`;
+  }).join('');
+  $('presLegend').innerHTML = top.map((c, i) => `<span><span class="sw" style="background:var(--c${i + 1})"></span>${esc(c.nmu)}</span>`).join('') + `<span><span class="sw" style="background:var(--c-outros)"></span>Outros</span>`;
+  // estados
+  const cols = top.map((c, i) => `<th class="r"><span class="sw" style="background:var(--c${i + 1})"></span>${esc(curto(c.nmu))}</th>`).join('');
+  $('presUfHead').innerHTML = `<tr><th>Estado</th><th class="r">Urnas</th>${cols}<th class="barcell hide-sm"></th><th>Lidera</th><th class="r hide-sm">Válidos</th></tr>`;
+  const regUfs = st.regiao ? REGIOES[st.regiao].ufs : null;
+  const linhas = [...ufs().map(u => ({ cd: u.cd, nm: u.ds })), { cd: 'zz', nm: 'EXTERIOR' }]
+    .filter(u => !regUfs || regUfs.includes(u.cd))
+    .map(u => ({ ...u, r: P.ufs.get(u.cd) })).filter(u => u.r)
+    .sort((a, b) => num(b.r.e?.te) - num(a.r.e?.te));
+  $('presUfBody').innerHTML = linhas.map(u => {
+    const l = liderDe(u.r), li = l ? top.findIndex(c => c.n === l.n) : -1;
+    return `<tr class="click${u.cd === st.uf ? ' hl' : ''}" data-uf="${u.cd}"><td>${esc(u.nm.charAt(0) + u.nm.slice(1).toLowerCase())} <span class="rk">${u.cd.toUpperCase()}</span></td>
+      <td class="r">${pct1(num(u.r.s?.pstn))}</td>${top.map(c => `<td class="r">${pct1(pctDe(u.r, c.n))}</td>`).join('')}
+      <td class="barcell hide-sm">${stackBar(u.r, top)}</td>
+      <td class="lider">${l ? `${li >= 0 ? `<span class="sw" style="background:var(--c${li + 1})"></span>` : ''}${esc(l.nmu)}` : '—'}</td>
+      <td class="r hide-sm">${fmt(u.r.v?.vv)}</td></tr>`;
+  }).join('') || `<tr><td colspan="8" class="empty">Carregando estados…</td></tr>`;
+  renderPresCidades();
+}
+function renderPresCidades() {
+  if (st.view !== 'pres') return;
+  const top = presTop(), u = ufInfo(st.uf);
+  $('presCidTitle').textContent = ehTodos() ? `200 maiores cidades · ${lugarNome()}` : `Por cidade · ${u ? u.ds.charAt(0) + u.ds.slice(1).toLowerCase() : st.uf.toUpperCase()}`;
+  $('presCidProg').textContent = P.running && P.total ? `carregando ${P.done}/${P.total} municípios…` : `${fmt(P.cid.size)} municípios com votos · escolha o estado no filtro ou clique na tabela acima`;
+  if (ehTodos()) {
+    const cols = top.map((c, i) => `<th class="r"><span class="sw" style="background:var(--c${i + 1})"></span>${esc(curto(c.nmu))}</th>`).join('');
+    $('presCidHead').innerHTML = `<tr><th>Município</th><th class="r">Urnas</th>${cols}<th class="barcell hide-sm"></th><th>Lidera</th><th class="r hide-sm">Válidos</th></tr>`;
+    const q = norm($('presCidBusca').value);
+    const rows = (P.cidLista || []).map(m => ({ m, nm: ufInfo(m.uf)?.mu.find(x => x.cd === m.cd)?.nm || m.cd, c: P.cid.get(m.uf + m.cd) }))
+      .filter(x => x.c && (!q || norm(x.nm).includes(q)));
+    $('presCidBody').innerHTML = rows.slice(0, P.cidLimit).map(({ m, nm, c }) => {
+      const l = liderDe(c.r), li = l ? top.findIndex(x => x.n === l.n) : -1;
+      return `<tr><td>${esc(nm)} <span class="tag">${m.uf.toUpperCase()}</span></td><td class="r">${pct1(num(c.r.s?.pstn))}</td>
+        ${top.map(t => `<td class="r">${pct1(pctDe(c.r, t.n))}</td>`).join('')}
+        <td class="barcell hide-sm">${stackBar(c.r, top)}</td>
+        <td class="lider">${l ? `${li >= 0 ? `<span class="sw" style="background:var(--c${li + 1})"></span>` : ''}${esc(l.nmu)}` : '—'}</td>
+        <td class="r hide-sm">${fmt(c.r.v?.vv)}</td></tr>`;
+    }).join('') || `<tr><td colspan="8" class="empty">${P.running ? 'Carregando as maiores cidades…' : 'Nenhuma cidade com votos apurados ainda.'}</td></tr>`;
+    $('presCidMore').innerHTML = rows.length > P.cidLimit ? `<button class="btn" id="presCidMoreBtn">Mostrar mais (${fmt(rows.length - P.cidLimit)} restantes)</button>` : '';
+    if ($('presCidMoreBtn')) $('presCidMoreBtn').onclick = () => { P.cidLimit += 100; renderPresCidades(); };
+    return;
+  }
+  const cols = top.map((c, i) => `<th class="r"><span class="sw" style="background:var(--c${i + 1})"></span>${esc(curto(c.nmu))}</th>`).join('');
+  $('presCidHead').innerHTML = `<tr><th>Município</th><th class="r">Urnas</th>${cols}<th class="barcell hide-sm"></th><th>Lidera</th><th class="r hide-sm">Válidos</th></tr>`;
+  const q = norm($('presCidBusca').value);
+  const rows = (u ? u.mu : []).map(m => ({ m, c: P.cid.get(m.cd) })).filter(x => x.c && (!q || norm(x.m.nm).includes(q)))
+    .sort((a, b) => num(b.c.r.v?.vv) - num(a.c.r.v?.vv));
+  $('presCidBody').innerHTML = rows.slice(0, P.cidLimit).map(({ m, c }) => {
+    const l = liderDe(c.r), li = l ? top.findIndex(x => x.n === l.n) : -1;
+    return `<tr><td>${esc(m.nm)}${m.c === 's' ? ' <span class="rk">capital</span>' : ''}</td><td class="r">${pct1(num(c.r.s?.pstn))}</td>
+      ${top.map(t => `<td class="r">${pct1(pctDe(c.r, t.n))}</td>`).join('')}
+      <td class="barcell hide-sm">${stackBar(c.r, top)}</td>
+      <td class="lider">${l ? `${li >= 0 ? `<span class="sw" style="background:var(--c${li + 1})"></span>` : ''}${esc(l.nmu)}` : '—'}</td>
+      <td class="r hide-sm">${fmt(c.r.v?.vv)}</td></tr>`;
+  }).join('') || `<tr><td colspan="8" class="empty">${P.running ? 'Carregando…' : 'Nenhum município com votos apurados ainda.'}</td></tr>`;
+  $('presCidMore').innerHTML = rows.length > P.cidLimit ? `<button class="btn" id="presCidMoreBtn">Mostrar mais (${fmt(rows.length - P.cidLimit)} restantes)</button>` : '';
+  if ($('presCidMoreBtn')) $('presCidMoreBtn').onclick = () => { P.cidLimit += 200; renderPresCidades(); };
+}
+
+/* ---------------- filtros ---------------- */
+function fillCargo() {
+  const opts = st.uf === 'df' ? ['6', '8', '5', '3', '1'] : ['6', '7', '5', '3', '1'];
+  if (!opts.includes(st.cargo)) st.cargo = '6';
+  const nome = c => ehTodos() && c === '7' ? 'Deputado Estadual/Distrital' : CARGOS[c];
+  $('cargo').innerHTML = opts.map(c => `<option value="${c}"${c === st.cargo ? ' selected' : ''}>${nome(c)}</option>`).join('');
+}
+function fillRegiao() {
+  $('regiao').innerHTML = '<option value="">Todas</option>' + Object.entries(REGIOES).map(([k, r]) => `<option value="${k}"${k === st.regiao ? ' selected' : ''}>${r.nm}</option>`).join('');
+}
+function fillUf() {
+  const list = ufs().filter(u => !st.regiao || REGIOES[st.regiao].ufs.includes(u.cd)).sort((a, b) => a.ds.localeCompare(b.ds));
+  if (st.uf !== TODOS && !list.find(u => u.cd === st.uf)) st.uf = list[0]?.cd || 'rj';
+  const todos = `<option value="${TODOS}"${ehTodos() ? ' selected' : ''}>Todos (${st.regiao ? REGIOES[st.regiao].nm : 'Brasil'})</option>`;
+  $('uf').innerHTML = todos + list.map(u => `<option value="${u.cd}"${u.cd === st.uf ? ' selected' : ''}>${esc(u.ds.charAt(0) + u.ds.slice(1).toLowerCase())} (${u.cd.toUpperCase()})</option>`).join('');
+}
+function fillMun() {
+  const u = ufInfo(st.uf);
+  $('munList').innerHTML = u ? u.mu.map(m => `<option value="${esc(m.nm)}">`).join('') : '';
+  $('mun').value = munInfo()?.nm || '';
+  $('mun').disabled = ehTodos();
+  $('mun').placeholder = ehTodos() ? 'Escolha um estado' : 'Todo o estado';
+}
+function changed() { st.limit = 50; persist(); load(); }
+function ufChanged() { st.mun = ''; st.partido = ''; st.candSq = ''; $('candSel').value = ''; fillCargo(); fillMun(); $('munBusca').value = ''; }
+
+$('cargo').onchange = e => { st.cargo = e.target.value; st.candSq = ''; $('candSel').value = ''; changed(); };
+$('regiao').onchange = e => { st.regiao = e.target.value; const old = st.uf; fillUf(); if (old !== st.uf) ufChanged(); changed(); };
+$('uf').onchange = e => { st.uf = e.target.value; ufChanged(); changed(); };
+$('mun').onchange = e => {
+  const u = ufInfo(st.uf); const v = norm(e.target.value);
+  const m = v ? u.mu.find(x => norm(x.nm) === v) : null;
+  if (v && !m) { e.target.value = munInfo()?.nm || ''; return; }
+  st.mun = m ? m.cd : ''; changed();
+};
+$('mun').oninput = e => { if (!e.target.value && st.mun) { st.mun = ''; changed(); } };
+$('partido').onchange = e => { st.partido = e.target.value; st.limit = 50; renderCands(); };
+$('busca').oninput = e => { st.busca = e.target.value; st.limit = 50; renderCands(); };
+$('soEleitos').onchange = e => { st.soEleitos = e.target.checked; renderCands(); };
+$('intervalo').onchange = () => { schedule(); load(); };
+$('munBusca').oninput = renderMunis;
+$('cmBusca').oninput = renderCandView;
+$('candHero').onclick = async e => {
+  if (!e.target.closest('#copyResumo')) return;
+  const b = e.target.closest('#copyResumo');
+  try { await navigator.clipboard.writeText(resumoWhatsApp()); b.textContent = 'Copiado ✓'; }
+  catch (err) { b.textContent = 'Não foi possível copiar'; }
+  setTimeout(() => { b.textContent = 'Copiar resumo WhatsApp'; }, 1800);
+};
+$('candSel').onchange = e => {
+  const v = e.target.value; const all = flatCands(st.ufResult);
+  const k = all.find(c => candLabel(c) === v) || all.find(c => String(c.n) === v.trim()) || all.find(c => norm(c.nmu) === norm(v));
+  if (k) abrirCandidato(k);
+};
+$('muniBody').onclick = e => {
+  const tu = e.target.closest('tr[data-uf]');
+  if (tu) { st.uf = tu.dataset.uf; fillRegiao(); fillUf(); ufChanged(); changed(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  const tr = e.target.closest('tr[data-mun]'); if (!tr) return; st.mun = tr.dataset.mun; fillMun(); changed(); window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+$('candBody').onclick = e => {
+  const tr = e.target.closest('tr[data-sq]'); if (!tr) return;
+  const k = candBySq(tr.dataset.sq); if (k) abrirCandidato(k); else openCand(tr.dataset.sq);
+  window.scrollTo({ top: 0 });
+};
+$('partyBody').onclick = e => { const tr = e.target.closest('tr[data-party]'); if (!tr) return; const p = tr.dataset.party; st.partido = st.partido === p ? '' : p; if (![...$('partido').options].some(o => o.value === st.partido)) $('partido').insertAdjacentHTML('beforeend', `<option>${esc(st.partido)}</option>`); $('partido').value = st.partido; renderCands(); };
+document.querySelectorAll('th[data-msort]').forEach(th => th.onclick = () => { st.muniSort = th.dataset.msort; renderMunis(); });
+document.querySelectorAll('#viewCand th[data-sort]').forEach(th => th.onclick = () => {
+  const k = th.dataset.sort; st.cmDir = st.cmSort === k ? -st.cmDir : (k === 'nm' ? 1 : -1); st.cmSort = k; renderCandView();
+});
+$('tabs').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  st.view = b.dataset.view;
+  if (st.view === 'geral') history.replaceState(null, '', location.pathname);
+  else if (st.view === 'pres') history.replaceState(null, '', location.pathname + '#presidente');
+  else if (st.candSq) location.hash = 'c=' + st.candSq;
+  applyView(); render();
+  if (st.view === 'pres') loadPres(); else load(); // a aba de presidente não atualiza os dados das outras
+};
+$('presUfBody').onclick = e => {
+  const tr = e.target.closest('tr[data-uf]'); if (!tr || tr.dataset.uf === 'zz') return;
+  st.uf = tr.dataset.uf; if (st.regiao && !REGIOES[st.regiao].ufs.includes(st.uf)) st.regiao = '';
+  fillRegiao(); fillUf(); ufChanged(); renderPres(); persist(); loadPres();
+  $('presCidTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+$('presCidBusca').oninput = renderPresCidades;
+window.addEventListener('hashchange', () => {
+  const m = location.hash.match(/^#c=(.+)$/);
+  if (m) { if (m[1] !== st.candSq || st.view !== 'cand') openCand(decodeURIComponent(m[1])); }
+  else if (st.view !== 'geral') { st.view = 'geral'; applyView(); render(); }
+});
+$('modeSeg').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  st.mode = b.dataset.mode; st.candSq = ''; $('candSel').value = '';
+  if (location.hash) history.replaceState(null, '', location.pathname);
+  document.querySelectorAll('#modeSeg button').forEach(x => x.classList.toggle('on', x === b));
+  changed();
+};
+
+/* tooltip */
+const tip = $('tip');
+document.addEventListener('mousemove', e => {
+  const t = e.target.closest('[data-tip]');
+  if (!t) { tip.style.opacity = 0; return; }
+  tip.textContent = t.dataset.tip;
+  const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8);
+  const y = e.clientY + 16 + tip.offsetHeight > innerHeight ? e.clientY - tip.offsetHeight - 10 : e.clientY + 16;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px'; tip.style.opacity = 1;
+});
+
+/* ---------------- simulação (dados fictícios no formato do TSE) ---------------- */
+const Sim = (() => {
+  const started = Date.now();
+  const cache = new Map();
+  const FIRST = ['Ana','Bruno','Carla','Diego','Elisa','Fábio','Gabriela','Hugo','Isabel','João','Karina','Lucas','Marta','Nelson','Olívia','Paulo','Quésia','Rafael','Sara','Tiago','Úrsula','Vítor','Wanda','Yuri'];
+  const LAST = ['Almeida','Barros','Cardoso','Duarte','Esteves','Farias','Gomes','Henriques','Inácio','Jardim','Lacerda','Moreira','Nogueira','Pacheco','Queiroz','Rezende','Siqueira','Teixeira','Valente','Xavier'];
+  const PARTIDOS = ['PA','PB','PC','PD','PE','PF','PG','PH','PI','PJ','PK','PL'];
+  function rng(seed) { let s = 0; for (const ch of seed) s = (s * 31 + ch.charCodeAt(0)) >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+  const progress = () => Math.min(1, (Date.now() - started) / 1000 / 600 + 0.08); // ~10 min até 100%
+  function vagas() { const f = VAGAS_FED[st.uf] || 8; return st.cargo === '6' ? f : st.cargo === '8' ? 24 : (f <= 12 ? f * 3 : 36 + f - 12); }
+  function base() {
+    const key = st.uf + st.cargo;
+    if (cache.has(key)) return cache.get(key);
+    const r = rng(key), nv = vagas(), nc = Math.min(1200, nv * 14);
+    const ufc = ufInfo(st.uf);
+    const muns = (ufc ? ufc.mu : []).map(m => ({ cd: m.cd, ts: m.c === 's' ? 4000 + Math.floor(r() * 6000) : 20 + Math.floor(r() * 400), speed: 0.6 + r() * 0.9 }));
+    const totTs = muns.reduce((s, m) => s + m.ts, 0);
+    const cands = [];
+    for (let i = 0; i < nc; i++) {
+      const p = PARTIDOS[Math.floor(Math.pow(r(), 1.6) * PARTIDOS.length)];
+      const pn = 10 + PARTIDOS.indexOf(p) * 3;
+      const nome = FIRST[Math.floor(r() * FIRST.length)] + ' ' + LAST[Math.floor(r() * LAST.length)];
+      const k = { sq: key + i, n: String(pn * (st.cargo === '6' ? 100 : 1000) + i), nm: nome.toUpperCase() + ' ' + LAST[Math.floor(r() * LAST.length)].toUpperCase(),
+        nmu: nome.toUpperCase(), p, w: Math.pow(r(), 6) + 0.002, jitter: r(), h: null };
+      if (r() < 0.55) { /* "2022" fictício: força parecida, com crescimento/queda aleatório */
+        const g = 0.6 + r() * 0.9, mun = {};
+        for (const m of muns) { const lr = rng(k.sq + m.cd)(); mun[m.cd] = lr; }
+        k.h = { g, mun };
+      }
+      cands.push(k);
+    }
+    const o = { nv, cands, muns, totTs };
+    cache.set(key, o); return o;
+  }
+  const munProg = m => Math.min(1, progress() * m.speed);
+  function stats(ts, te, p) {
+    const stt = Math.round(ts * p), c = Math.round(te * p * 0.8);
+    return { s: { ts: String(ts), st: String(stt), pstn: String(ts ? stt / ts * 100 : 0) },
+             e: { te: String(te), c: String(c), pcn: String(p ? 80 : 0), pan: String(p ? 20 : 0), a: String(Math.round(te * p * 0.2)) } };
+  }
+  function ab() {
+    const b = base(); let ts = 0, stt = 0, te = 0;
+    const abr = b.muns.map(m => { const p = munProg(m), t = m.ts * 330; ts += m.ts; stt += Math.round(m.ts * p); te += t; return { tpabr: 'mun', cdabr: m.cd, ...stats(m.ts, t, p) }; });
+    abr.push({ tpabr: 'uf', cdabr: st.uf, s: { ts: String(ts), st: String(stt), pstn: String(stt / ts * 100) }, e: { te: String(te) } });
+    return { abr };
+  }
+  /* votos de um candidato num município com 100% apurado (base para 2026 e 2022) */
+  function full(b, k, m, sumW, local) { return k.w / sumW * (m.ts * 330 * 0.8 * 0.87 * 0.93) * local; }
+  function result(mun) {
+    const b = base();
+    const sumW = b.cands.reduce((s, k) => s + k.w, 0);
+    const muns = mun ? b.muns.filter(m => m.cd === mun) : b.muns;
+    let ts = 0, te = 0, stt = 0;
+    const votes = new Map(b.cands.map(k => [k.sq, 0]));
+    for (const m of muns) {
+      const p = munProg(m); ts += m.ts; te += m.ts * 330; stt += Math.round(m.ts * p);
+      const lr = rng(m.cd + st.cargo);
+      for (const k of b.cands) {
+        const local = 0.3 + lr() * 1.4;
+        const wave = 1 + 0.2 * Math.sin(p * 9 + k.jitter * 20);
+        votes.set(k.sq, votes.get(k.sq) + Math.round(full(b, k, m, sumW, local) * p * wave));
+      }
+    }
+    const p = ts ? stt / ts : 0;
+    const st0 = stats(ts, te, p);
+    st0.s.st = String(stt);
+    const tv = num(st0.e.c), vb = Math.round(tv * 0.07), vn = Math.round(tv * 0.06), vv = tv - vb - vn;
+    const totNom = [...votes.values()].reduce((s, v) => s + v, 0) || 1;
+    const ranked = [...b.cands].sort((x, z) => votes.get(z.sq) - votes.get(x.sq));
+    const eleitos = new Set(!mun && p > 0.02 ? ranked.slice(0, b.nv).map(k => k.sq) : []);
+    const byP = {};
+    for (const k of b.cands) (byP[k.p] ||= []).push(k);
+    const seats = {}; for (const k of ranked.slice(0, eleitos.size)) seats[k.p] = (seats[k.p] || 0) + 1;
+    const agr = Object.entries(byP).map(([pp, ks]) => ({ n: pp, nm: 'Partido ' + pp.slice(1) + ' (fictício)', tp: 'i', com: pp, vag: String(seats[pp] || 0),
+      par: [{ n: pp, sg: pp, nm: 'Partido ' + pp.slice(1), tval: String(Math.round(ks.reduce((s, k) => s + votes.get(k.sq), 0) * 0.04)),
+        cand: ks.map(k => ({ n: k.n, sqcand: k.sq, nm: k.nm, nmu: k.nmu, vap: String(votes.get(k.sq)), pvapn: String(votes.get(k.sq) / totNom * 100), dvt: 'Válido',
+          e: 'n', st: '', dt: '01/01/' + (1950 + Number(k.n) % 50) })) }] }));
+    return { ht: new Date().toLocaleTimeString('pt-BR'), ...st0, v: { tv: String(tv), vv: String(vv), pvvn: String(tv ? vv / tv * 100 : 0), vb: String(vb), pvbn: String(tv ? vb / tv * 100 : 0), tvn: String(vn), ptvnn: String(tv ? vn / tv * 100 : 0) },
+      carg: [{ cd: st.cargo, nv: String(b.nv), qe: p > 0.02 ? String(Math.round(vv / b.nv)) : '', agr }] };
+  }
+  function hist(k) {
+    const b = base(); const c = b.cands.find(x => x.sq === k.sq);
+    if (!c || !c.h) return null;
+    if (!c.h.cached) {
+      const sumW = b.cands.reduce((s, x) => s + x.w, 0); const mun = {}; let total = 0;
+      for (const m of b.muns) {
+        const lr = rng(m.cd + st.cargo); let local = 1;
+        for (const x of b.cands) { const l = 0.3 + lr() * 1.4; if (x.sq === c.sq) { local = l; break; } }
+        const v = Math.round(full(b, c, m, sumW, local) / c.h.g * (0.7 + c.h.mun[m.cd] * 0.6));
+        if (v) { mun[m.cd] = v; total += v; }
+      }
+      c.h.cached = { nm: c.nm, nmu: c.nmu, n: c.n, sg: c.p, cargo: st.cargo, sit: 'Simulado', total, mun };
+    }
+    return c.h.cached;
+  }
+  return { ab, result, hist };
+})();
+
+/* ---------------- resumo para WhatsApp ----------------
+   Usado pelo botão "Copiar resumo" e pelo script whatsapp_resumo.py:
+   apuracao.html?uf=rj&cargo=6&num=1311  -> abre direto no candidato
+   resumoPronto()  -> true quando dados e municípios terminaram de carregar
+   resumoWhatsApp() -> texto da mensagem */
+function resumoPronto() {
+  return !!(st.config && st.ufResult && st.candSq && candBySq(st.candSq) && !st.loading && !MC.running && !st.wantNum);
+}
+/* cargos majoritários, situação até o momento (mapa por número do candidato):
+   presidente/governador: maioria absoluta dos válidos elege no 1º turno; senão os 2 mais votados vão ao 2º turno
+   senador: elegem-se os mais votados, tantos quantas as vagas (2 em 2026), sem 2º turno */
+function situacoesMajoritarias(r, cargo) {
+  const cs = flatCands(r).filter(c => !c.dvt || /^v[aá]lido/i.test(c.dvt));
+  if (!cs.length || !cs[0].vap) return null;
+  const m = new Map();
+  if (cargo === '5') {
+    const nv = num(r.carg[0].nv) || 1;
+    cs.forEach((c, i) => m.set(String(c.n), i < nv
+      ? { cls: 'el', txt: 'Eleito até o momento', wa: '✅ ELEITO', tip: `Entre os ${nv} mais votados (${nv} vaga${nv > 1 ? 's' : ''})` }
+      : { cls: 'fora', txt: 'Fora até o momento', wa: '❌ FORA', tip: `Fora das ${nv} vaga${nv > 1 ? 's' : ''}` }));
+  } else if (cs[0].pv > 50) {
+    cs.forEach((c, i) => m.set(String(c.n), i === 0
+      ? { cls: 'el', txt: 'Venceria no 1º turno', wa: '✅ VENCERIA NO 1º TURNO', tip: 'Tem mais da metade dos votos válidos' }
+      : { cls: 'fora', txt: 'Fora até o momento', wa: '❌ FORA (o 1º colocado tem maioria)', tip: 'O 1º colocado tem mais da metade dos válidos' }));
+  } else {
+    cs.forEach((c, i) => m.set(String(c.n), i < 2
+      ? { cls: 'sup', txt: '2º turno até o momento', wa: '🔁 2º TURNO', tip: 'Entre os 2 mais votados, sem maioria absoluta' }
+      : { cls: 'fora', txt: 'Fora do 2º turno', wa: '❌ FORA DO 2º TURNO', tip: 'Fora dos 2 mais votados' }));
+  }
+  return m;
+}
+function situacaoMajoritaria(r, sq, cargo = st.cargo) {
+  const m = situacoesMajoritarias(r, cargo);
+  if (!m) return '⏳ AGUARDANDO VOTOS';
+  const k = flatCands(r).find(c => c.sq === sq);
+  const s = k && m.get(String(k.n));
+  return s ? s.wa + ' até o momento' : '—';
+}
+function resumoStatus() { return { pronto: resumoPronto(), naoEncontrado: !!st.candNaoEncontrado }; }
+async function atualizarAgora() {
+  while (!st.config || st.loading) await new Promise(r => setTimeout(r, 200));
+  await load();
+}
+function resumoWhatsApp() {
+  const k = st.candSq && candBySq(st.candSq);
+  if (!k) return null;
+  const all = flatCands(st.ufResult);
+  const s = st.ufResult.s || {};
+  const al = st.alloc;
+  const stt = al && al.status.get(k.sq);
+  const situ = !stt ? '⏳ AGUARDANDO VOTOS' : { el: '✅ ELEITO', sup: '🟡 SUPLENTE', fora: '❌ FORA' }[stt.s];
+  // posições contam só candidatos aptos: votos "anulado sub judice" não valem enquanto o recurso não é julgado
+  const apto = c => c.sq === k.sq || !c.dvt || (/^v[aá]lido/i.test(c.dvt) && !/legenda/i.test(c.dvt));
+  const doPartido = all.filter(c => c.sg === k.sg && apto(c));
+  const posPartido = doPartido.findIndex(c => c.sq === k.sq) + 1;
+  const daFed = all.filter(c => c.agr === k.agr && apto(c));
+  const subJudiceAcima = all.filter(c => c.agr === k.agr && !apto(c) && c.vap > k.vap);
+  const cadeiras = al ? (al.seatsBySg.get(k.sg) || 0) : null;
+  const pm = pstByMun();
+  const top = unidades().map(m => ({ cd: m.cd, nm: m.nm, v: MC.cache.get(m.cd)?.votes.get(k.sq) || 0, p: (pm.get(m.cd)?.p || 0) * 100 }))
+    .filter(r => r.v > 0).sort((a, b) => b.v - a.v).slice(0, 10);
+  top.forEach(r => r.pos = posNaCidade(r.cd, k.sq));
+  const titulo = s => s.toLowerCase().replace(/(^|[\s(-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()).replace(/ (D[aeo]s?|E) /g, w => w.toLowerCase());
+  const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const L = [];
+  L.push(`*🗳️ ${k.nmu} (${k.n}) · ${k.sg}*`);
+  L.push(`${CARGOS[st.cargo]} · ${st.cargo === '1' ? 'Brasil' : st.uf.toUpperCase()} · ${hora}${st.mode === 'sim' ? ' · SIMULAÇÃO' : ''}`);
+  if (st.mode === 'sim') L.unshift('🧪 *TESTE · SIMULAÇÃO COM DADOS FICTÍCIOS*', '_Candidatos e números inventados, não é resultado real._', '');
+  L.push('');
+  if (majoritario(st.cargo)) {
+    // presidente: números do Brasil + linha do estado; governador: números do estado
+    const nac = st.cargo === '1' && st.brResult;
+    const r = nac ? st.brResult : st.ufResult;
+    const cs = flatCands(r);
+    const kk = cs.find(c => c.sq === k.sq) || cs.find(c => String(c.n) === String(k.n)) || k;
+    const onde = nac ? 'Brasil' : 'estado';
+    L.push(`*Votos${nac ? ' (Brasil)' : ''}:* ${fmt(kk.vap)} (${pct(kk.pv)} dos válidos)`);
+    L.push(`*Urnas apuradas${nac ? ' (Brasil)' : ''}:* ${pct(num((r.s || {}).pstn))}`);
+    L.push(`*Posição no ${onde}:* ${kk.vap ? kk.rank + 'º' : '—'} de ${cs.length}`);
+    if (kk.vap) {
+      const viz = kk.rank === 1 ? cs[1] : cs[kk.rank - 2];
+      if (viz) L.push(`*Diferença ${kk.rank === 1 ? 'para o 2º' : 'para o ' + viz.rank + 'º'} (${viz.nmu}):* ${kk.rank === 1 ? '+' : '−'}${fmt(Math.abs(kk.vap - viz.vap))} votos`);
+    }
+    if (nac) L.push(`*No ${st.uf.toUpperCase()}:* ${fmt(k.vap)} (${pct(k.pv)}) · ${k.vap ? k.rank + 'º lugar' : '—'} · urnas ${pct(num(s.pstn))}`);
+    L.push(`*Situação:* ${situacaoMajoritaria(r, kk.sq)}`);
+  } else {
+    L.push(`*Votos:* ${fmt(k.vap)} (${pct(k.pv)} dos válidos)`);
+    L.push(`*Urnas apuradas:* ${pct(num(s.pstn))}`);
+    L.push(`*Posição no estado:* ${k.vap ? k.rank + 'º' : '—'} de ${fmt(all.length)}`);
+    L.push(`*Posição no partido:* ${k.vap ? posPartido + 'º' : '—'} de ${doPartido.length} no ${k.sg}${cadeiras != null ? ` (${cadeiras} cadeira${cadeiras === 1 ? '' : 's'})` : ''}`);
+    if (daFed.length > doPartido.length) L.push(`_Na federação ${k.agr}: ${k.vap ? daFed.findIndex(c => c.sq === k.sq) + 1 + 'º' : '—'} de ${daFed.length}_`);
+    L.push(`*Situação:* ${situ}${stt ? ' até o momento' : ''}`);
+    if (subJudiceAcima.length) L.push(`_⚖️ ${subJudiceAcima.map(c => `${c.nmu} (${c.sg}, ${fmt(c.vap)} votos)`).join(', ')} está${subJudiceAcima.length > 1 ? 'ão' : ''} à frente, mas com registro sub judice: os votos não contam por enquanto. Se o recurso for aceito, a situação pode mudar._`);
+  }
+  L.push('');
+  if (st.cargo === '1') L.push(`_Cidades do ${st.uf.toUpperCase()}_`);
+  L.push('*Top 10 cidades* (votos · urnas apuradas · posição na cidade)');
+  if (!top.length) L.push('_ainda sem votos apurados_');
+  top.forEach((r, i) => L.push(`${i + 1}. ${titulo(r.nm)}: ${fmt(r.v)} · ${pct1(r.p)} · ${r.pos ? r.pos + 'º' : '—'}`));
+  return L.join('\n');
+}
+
+/* ---------------- init ---------------- */
+(async function init() {
+  const qp = new URLSearchParams(location.search);
+  if (qp.get('modo')) st.mode = qp.get('modo') === 'sim' ? 'sim' : 'live';
+  if (qp.get('uf')) { st.uf = qp.get('uf').toLowerCase(); st.regiao = ''; st.mun = ''; }
+  if (qp.get('cargo')) st.cargo = { presidente: '1', governador: '3', senador: '5', federal: '6', estadual: '7', distrital: '8' }[qp.get('cargo').toLowerCase()] || qp.get('cargo');
+  if (qp.get('num')) { st.wantNum = qp.get('num').trim(); st.view = 'cand'; }
+  if (qp.get('auto') === '0') $('intervalo').value = '0'; // o bot controla quando atualizar
+  // página publicada com a foto dos dados? (tse/foto.json só existe na versão publicada)
+  try { const r = await fetch('tse/foto.json', { cache: 'no-store' }); if (r.ok) FOTO = await r.json(); } catch (e) {}
+  if (FOTO) {
+    st.mode = 'live'; $('intervalo').value = '0';
+    $('modeSeg').classList.add('hidden'); $('intervalo').closest('.f').classList.add('hidden');
+  }
+  document.querySelectorAll('#modeSeg button').forEach(x => x.classList.toggle('on', x.dataset.mode === st.mode));
+  setStatus('carregando municípios…', 'on');
+  try { st.config = await getJSON(`${baseDo('6')}/config/mun-e${pad(ELE_EST, 6)}-cm.json`); }
+  catch (e) { setStatus('não foi possível carregar a lista de municípios do TSE', 'err'); return; }
+  fillRegiao(); fillUf(); fillCargo(); fillMun();
+  const m = location.hash.match(/^#c=(.+)$/);
+  if (m) { st.candSq = decodeURIComponent(m[1]); st.view = 'cand'; }
+  else if (location.hash === '#presidente' && !st.wantNum) st.view = 'pres';
+  applyView();
+  schedule();
+  load();
+})();
+</script>
+</body>
+</html>
