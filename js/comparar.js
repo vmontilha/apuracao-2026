@@ -238,8 +238,7 @@ ABAS.comparar = async function () {
     <h2 class="tit">Comparar</h2>
     <div class="sub">Compare duas votações (candidato, partido ou campo político, de 2014 a 2026) por cidade, por zona eleitoral ou seção a seção.</div>
     <div class="filtros" style="margin-top:14px">${CMP_PRESETS.map((p, i) => `<button class="chip" data-preset="${i}" style="cursor:pointer" title="${esc(p.dica)}">${esc(p.nm)}</button>`).join('')}</div>
-    <div class="grid2">${cartao(sa, 'a', lca, pa)}${cartao(sb, 'b', lcb, pb)}</div>
-    <div class="card" style="padding:14px;margin-top:14px">
+    <div class="card" style="padding:14px;margin-bottom:14px">
       <div style="font-weight:700;margin-bottom:6px">Onde comparar</div>
       <div class="filtros" style="margin:0">
         <select id="cmpUf">${Object.keys(UF_NM).map(u => `<option value="${u}" ${u === uf ? 'selected' : ''}>${UF_NM[u]}</option>`).join('')}</select>
@@ -248,6 +247,7 @@ ABAS.comparar = async function () {
       </div>
       <div class="note">${nivel === 'estado' ? 'Cada ponto é uma cidade do estado.' : nivel === 'cidade' ? 'Cada ponto é uma zona eleitoral da cidade.' : 'Cada ponto é uma seção eleitoral da zona (2022: Dados Abertos do TSE; 2024 e 2026: boletins de urna).'}</div>
     </div>
+    <div class="grid2">${cartao(sa, 'a', lca, pa)}${cartao(sb, 'b', lcb, pb)}</div>
     <div id="cmpRes" style="margin-top:14px"></div>`;
 
   A.querySelectorAll('select[data-lado]').forEach(el => el.onchange = () => {
