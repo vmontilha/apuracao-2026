@@ -39,15 +39,21 @@ button { font: inherit; color: inherit; }
 .top nav a.on, .top nav a:hover { background: var(--surface-2); color: var(--ink); }
 
 /* hero */
-.hero { position: relative; overflow: hidden; padding: 40px 0 26px;
+.hero { position: relative; overflow: hidden; padding: 12px 0 2px;
   background: radial-gradient(900px 380px at 15% -10%, #173a78 0%, transparent 70%), radial-gradient(700px 300px at 95% 0%, #0f3b3a 0%, transparent 70%); }
-.hero h1 { font-size: clamp(28px, 4.6vw, 46px); line-height: 1.08; margin: 0 0 12px; letter-spacing: -.025em; max-width: 760px; }
+.hero h1 { font-size: clamp(19px, 2.2vw, 26px); line-height: 1.2; margin: 0; letter-spacing: -.02em; }
+.hero h1 small { display: block; font-size: 13px; font-weight: 400; color: var(--ink-2); letter-spacing: 0; margin-top: 2px; }
+.faixa { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 6px 20px; }
+.faixa .prog-line { margin: 0; }
 .hero h1 em { font-style: normal; background: linear-gradient(90deg, #6fb0ff, #4ade80); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .hero p.lead { color: var(--ink-2); font-size: clamp(15px, 1.6vw, 17px); max-width: 680px; margin: 0 0 20px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; background: rgba(77,155,255,.09); border: 1px solid rgba(77,155,255,.22); color: var(--ink-2); font-size: 13px; }
 .chip b { color: var(--ink); font-weight: 600; }
-.nacional { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.nacional { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.panel .cand-tile { padding: 9px; gap: 9px; }
+.panel .cand-tile img, .panel .cand-tile .ph { width: 44px; height: 44px; }
+.panel .cand-tile .big { font-size: 19px; }
 .cand-tile { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; background: rgba(13,31,60,.82); border: 1px solid var(--border); }
 .cand-tile img, .cand-tile .ph { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; background: var(--surface-2); flex: none; border: 2px solid var(--c, var(--axis)); }
 .cand-tile .nm { font-weight: 650; }
@@ -73,7 +79,7 @@ button { font: inherit; color: inherit; }
 .seg button { border: 0; background: transparent; color: var(--ink-2); padding: 6px 11px; cursor: pointer; font-size: 13px; }
 .seg button.on { background: var(--accent); color: #fff; }
 .seg button[hidden], .seg[hidden] { display: none; }
-.mapbox { position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: calc(100vh - 170px); min-height: 300px; }
+.mapbox { position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: calc(100vh - 150px); min-height: 300px; }
 #map { width: 100%; height: 100%; display: block; touch-action: manipulation; }
 #map path { stroke: #0a1830; stroke-width: .6; vector-effect: non-scaling-stroke; fill: var(--land); cursor: pointer; transition: fill .25s, opacity .25s; fill-rule: evenodd; }
 #map path:hover { stroke: #fff; stroke-width: 1.4; }
@@ -143,7 +149,8 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
 @media (max-width: 900px) {
   .explorer { grid-template-columns: 1fr; }
   .mapcard { position: static; }
-  .mapbox { aspect-ratio: 5 / 4; max-height: 65vh; }
+  .mapbox { aspect-ratio: 1 / 1; max-height: 72vh; }
+  .explorer { padding-top: 8px; }
   .top nav a { padding: 7px 8px; }
 }
 /* abas, contador e anúncios */
@@ -193,7 +200,9 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
   .top nav { order: 3; width: 100%; margin-left: 0; }
   .contador { margin-left: auto; }
   .explorer { scroll-margin-top: 92px; }
-  .hero { padding: 22px 0 14px; }
+  .hero { padding: 8px 0 0; }
+  .hero h1 small { display: none; }
+  .faixa .prog-line span:nth-child(n+3) { display: none; }
   .hero p.lead { font-size: 14px; margin-bottom: 12px; }
   .chips { margin-bottom: 14px; }
   .nacional { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -213,19 +222,8 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
   <div class="contador" id="contador" hidden></div>
 </div></header>
 
-<section class="hero"><div class="wrap">
-  <h1>Do Brasil à urna, <em>em tempo real.</em></h1>
-  <p class="lead">Resultados oficiais do TSE por região, estado, cidade, zona eleitoral e seção — com o boletim de cada urna lido direto no seu navegador.</p>
-  <div class="chips">
-    <span class="chip"><b>5.570</b> municípios</span>
-    <span class="chip"><b>27</b> estados</span>
-    <span class="chip">Zonas e <b>seções</b></span>
-    <span class="chip">Comparação com <b>2014 · 2018 · 2022</b></span>
-    <a class="chip" href="#/congresso"><b>Congresso</b> eleito</a>
-    <a class="chip" href="#/partidos">Esquerda · centro · direita</a>
-    <a class="chip" href="#/comparar"><b>Comparar</b> eleições</a>
-  </div>
-  <div class="nacional" id="nacional"></div>
+<section class="hero"><div class="wrap faixa">
+  <h1>Do Brasil à urna, <em>em tempo real.</em> <small>Clique no mapa: região, estado, cidade, zona e seção.</small></h1>
   <div class="prog-line" id="nacProg"></div>
 </div></section>
 
@@ -255,7 +253,6 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
   <section class="aba" id="abaPartidos" hidden></section>
   <section class="aba" id="abaHistorico" hidden></section>
   <section class="aba" id="abaComparar" hidden></section>
-  <section class="aba" id="abaComparar" hidden></section>
   <div class="anuncio" id="anuncio2"></div>
   <section class="features">
     <div class="card feat"><b>Mapa que desce até a urna</b><p>Região, estado, cidade, zona e seção. Escolha um candidato e veja onde ele foi forte, até a urna.</p></div>
@@ -271,7 +268,7 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
 </div></footer>
 <div class="tip" id="tip"></div>
 
-<script src="js/espectro.js?v=20261006h"></script>
+<script src="js/espectro.js?v=20261006i"></script>
 <script>
 'use strict';
 /* ---------------- constantes ---------------- */
@@ -871,8 +868,8 @@ function resultadoTSE(r, c, lim = 8) {
       <div class="stat"><span>Votos válidos</span><b>${fmt(vv)}</b></div>
       <div class="stat"><span>Brancos / nulos</span><b>${fmt(num(r.v?.vb) + num(r.v?.tvn))}</b></div>
     </div>
-    <h3>${CARGO_NM[c]}</h3>${linhas(top, vv)}
-    ${l.length > lim ? `<div class="note">+ ${l.length - lim} candidatos</div>` : ''}`;
+    ${lim ? `<h3>${CARGO_NM[c]}</h3>${linhas(top, vv)}` : ''}
+    ${lim && l.length > lim ? `<div class="note">+ ${l.length - lim} candidatos</div>` : ''}`;
 }
 function somaEstados(c, ufs) {
   const m = new Map(); let vv = 0, ts = 0, st = 0;
@@ -944,7 +941,7 @@ async function painel() {
         return `<button class="reg" data-reg="${k}"><div class="t">${R.nm}</div>${top.map(x => `<div class="m" style="font-size:12.5px"><i class="sw" style="background:${cor(x.n)}"></i>${esc(cap(x.nm))} ${pc(s.vv ? x.v / s.vv * 100 : 0)}</div>`).join('') || '<div class="m">…</div>'}</button>`;
       }).join('');
       let topo = '';
-      if (c === '1' && S.br) topo = resultadoTSE(S.br, '1', 6);
+      if (c === '1' && S.br) topo = `<div class="nacional" style="margin-top:12px">${S.tiles || ''}</div>` + resultadoTSE(S.br, '1', 0);
       P.innerHTML = `<h2>Brasil</h2><div class="sub">Clique numa região no mapa ou abaixo.</div>${selAno()}${topo}
         <h3>Regiões${c !== '1' ? ' · ' + CARGO_NM[c] + ' (votos somados dos estados)' : ''}</h3><div class="regs">${regs}</div>
         ${c !== '1' ? `<h3>Estados</h3>${listaEstados(Object.keys(UF_NM), c)}` : ''}`;
@@ -1205,8 +1202,8 @@ async function nacional() {
   try {
     S.br = await getJSON(urlBr(S.turno === '2' ? '2' : '1'));
     const r = S.br, vv = num(r.v?.vv), l = cands(r).slice(0, 4);
-    $('nacional').innerHTML = l.map(k => `<div class="cand-tile" style="--c:${cor(k.n)}">
-      <img src="${urlFoto('1', 'br', k.sq)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">
+    S.tiles = l.map(k => `<div class="cand-tile" style="--c:${cor(k.n)}">
+      <img src="${urlFoto('1', 'br', k.sq)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">
       <div style="flex:1;min-width:0"><div class="nm">${esc(cap(k.nm))}${situacao(k)}</div><div class="pp">${esc(k.sg)} · ${fmt(k.v)} votos</div>
       <div class="big">${pc(vv ? k.v / vv * 100 : 0, 2)}</div><div class="bar"><i style="width:${vv ? k.v / vv * 100 : 0}%"></i></div></div></div>`).join('');
     const p = num(r.s?.pstn);
@@ -1332,11 +1329,11 @@ function mostraAba() {
 }
 addEventListener('DOMContentLoaded', ir);
 </script>
-<script src="js/congresso.js?v=20261006h"></script>
-<script src="js/partidos.js?v=20261006h"></script>
-<script src="js/historico.js?v=20261006h"></script>
-<script src="js/comparar.js?v=20261006h"></script>
-<script src="js/contador.js?v=20261006h"></script>
-<script src="js/anuncios.js?v=20261006h"></script>
+<script src="js/congresso.js?v=20261006i"></script>
+<script src="js/partidos.js?v=20261006i"></script>
+<script src="js/historico.js?v=20261006i"></script>
+<script src="js/comparar.js?v=20261006i"></script>
+<script src="js/contador.js?v=20261006i"></script>
+<script src="js/anuncios.js?v=20261006i"></script>
 </body>
 </html>
