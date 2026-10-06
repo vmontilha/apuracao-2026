@@ -72,7 +72,7 @@ button { font: inherit; color: inherit; }
 .seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
 .seg button { border: 0; background: transparent; color: var(--ink-2); padding: 6px 11px; cursor: pointer; font-size: 13px; }
 .seg button.on { background: var(--accent); color: #fff; }
-.seg button[hidden] { display: none; }
+.seg button[hidden], .seg[hidden] { display: none; }
 .mapbox { position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: calc(100vh - 170px); min-height: 300px; }
 #map { width: 100%; height: 100%; display: block; touch-action: manipulation; }
 #map path { stroke: #0a1830; stroke-width: .6; vector-effect: non-scaling-stroke; fill: var(--land); cursor: pointer; transition: fill .25s, opacity .25s; fill-rule: evenodd; }
@@ -260,7 +260,7 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
 </div></footer>
 <div class="tip" id="tip"></div>
 
-<script src="js/espectro.js"></script>
+<script src="js/espectro.js?v=20261006c"></script>
 <script>
 'use strict';
 /* ---------------- constantes ---------------- */
@@ -1311,10 +1311,10 @@ function mostraAba() {
 }
 addEventListener('DOMContentLoaded', ir);
 </script>
-<script src="js/congresso.js"></script>
-<script src="js/partidos.js"></script>
-<script src="js/historico.js"></script>
-<script src="js/contador.js"></script>
-<script src="js/anuncios.js"></script>
+<script src="js/congresso.js?v=20261006c"></script>
+<script src="js/partidos.js?v=20261006c"></script>
+<script src="js/historico.js?v=20261006c"></script>
+<script src="js/contador.js?v=20261006c"></script>
+<script src="js/anuncios.js?v=20261006c"></script>
 </body>
 </html>
