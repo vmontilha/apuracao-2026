@@ -1,6 +1,6 @@
 /* Contador de acessos (total, hoje e online agora). Servidor: pasta contador/ (Cloudflare Worker).
    Enquanto CONTADOR_URL estiver vazio, nada aparece. */
-const CONTADOR_URL = '';
+const CONTADOR_URL = 'https://apuracao-contador.apuracao2026.workers.dev';
 (function () {
   if (!CONTADOR_URL) return;
   const el = document.getElementById('contador');
