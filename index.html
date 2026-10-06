@@ -350,7 +350,7 @@ function secao(uf, mun, z, s) {
 }
 
 /* ---------------- estado da navegação ---------------- */
-const S = { reg: '', uf: '', mun: '', zona: '', sec: '', cargo: '1', geo: null, geoUf: '', mapa: null, br: null };
+const S = { reg: '', uf: '', mun: '', zona: '', sec: '', cargo: '1', cand: '', geo: null, geoUf: '', mapa: null, br: null };
 function lerHash() {
   const [cam, q] = location.hash.replace(/^#\/?/, '').split('?');
   const p = cam.split('/').filter(Boolean);
@@ -359,12 +359,14 @@ function lerHash() {
   if (p[0] && REG[p[0].toUpperCase()]) S.reg = p[0].toUpperCase();
   else if (p[0] && UF_NM[p[0]]) { S.uf = p[0]; S.reg = regDe(S.uf); S.mun = p[1] || ''; S.zona = p[2] ? pad(p[2], 4) : ''; S.sec = p[3] ? pad(p[3], 4) : ''; }
   if (c && CARGO_NM[c]) S.cargo = c;
-  if (!S.mun && !MAJ(S.cargo)) S.cargo = '1';
+  if (!S.uf && !MAJ(S.cargo)) S.cargo = '1';
+  S.cand = MAJ(S.cargo) ? '' : (new URLSearchParams(q || '').get('k') || '');
 }
 function hashDe(o = {}) {
   const x = { ...S, ...o };
   const p = x.uf ? [x.uf, x.mun, x.zona, x.sec].filter(Boolean) : (x.reg ? [x.reg] : []);
-  return '#/' + p.join('/') + (x.cargo !== '1' ? '?c=' + x.cargo : '');
+  const qs = [x.cargo !== '1' ? 'c=' + x.cargo : '', !MAJ(x.cargo) && x.cand ? 'k=' + x.cand : ''].filter(Boolean).join('&');
+  return '#/' + p.join('/') + (qs ? '?' + qs : '');
 }
 const nivel = () => S.sec ? 'sec' : S.zona ? 'zona' : S.mun ? 'mun' : S.uf ? 'uf' : S.reg ? 'reg' : 'br';
 const vaiPara = o => { location.hash = hashDe(o); };
@@ -448,8 +450,40 @@ async function colorir() {
       pinta(p, l && l.v ? l.n : '', l && vv ? l.v / vv : 0);
       if (l && l.v) legenda.set(l.n, `${cap(l.nm)} (${l.sg})`);
     }
+  } else if (!MAJ(S.cargo)) {
+    const D = await dep(S.uf, S.cargo).catch(() => null);
+    if (!D || S.geoUf !== D.uf || cargoUF(S.uf, S.cargo) !== D.cargo) return;
+    const k = S.cand && D.porN.get(S.cand);
+    if (k) {
+      // mancha do candidato escolhido: mais forte onde ele teve maior % dos votos da cidade
+      let max = 0;
+      for (const cd in D.mu) { const m = D.mu[cd]; max = Math.max(max, m.vv ? votosEm(m, k.i) / m.vv : 0); }
+      for (const p of svg.querySelectorAll('path[data-t]')) {
+        const m = D.mu[p.dataset.t], v = m ? votosEm(m, k.i) : 0;
+        if (!v) { p.style.fill = ''; p.style.fillOpacity = ''; continue; }
+        p.style.fill = cor(k.n);
+        p.style.fillOpacity = String(.15 + .85 * Math.sqrt((v / m.vv) / (max || 1)));
+      }
+      $('legend').innerHTML = `<span><i class="sw" style="background:${cor(k.n)}"></i>${esc(cap(k.nm))} (${esc(k.sg)}) · mais forte = maior % dos votos da cidade</span>
+        <span style="margin-left:auto;color:var(--muted)">máx. ${pc(max * 100)}</span>`;
+      return;
+    }
+    const conta = new Map();
+    for (const p of svg.querySelectorAll('path[data-t]')) {
+      const m = D.mu[p.dataset.t];
+      if (!m || !m.l.length) { pinta(p, '', 0); continue; }
+      const l = D.cands[m.l[0]];
+      p.style.fill = cor(l.n);
+      p.style.fillOpacity = String(Math.max(.35, Math.min(1, .35 + (m.l[1] / (m.vv || 1)) * 2.5)));
+      conta.set(l.i, (conta.get(l.i) || 0) + 1);
+    }
+    const top = [...conta].sort((a, b) => b[1] - a[1]);
+    $('legend').innerHTML = top.slice(0, 8).map(([i, q]) => { const l = D.cands[i]; return `<span><i class="sw" style="background:${cor(l.n)}"></i>${esc(cap(l.nm))} (${esc(l.sg)}) · ${q}</span>`; }).join('')
+      + (top.length > 8 ? `<span>+ ${top.length - 8}</span>` : '')
+      + `<span style="margin-left:auto;color:var(--muted)">mais votado em cada cidade · ${CARGO_NM[cargoUF(S.uf, S.cargo)]}</span>`;
+    return;
   } else {
-    const M = S.mapa, c = S.cargo === '6' || S.cargo === '7' ? '1' : S.cargo;
+    const M = S.mapa, c = S.cargo;
     for (const p of svg.querySelectorAll('path[data-t]')) {
       const d = M?.mu?.[p.dataset.t]?.[c];
       const l = d && d[2][0];
@@ -458,8 +492,56 @@ async function colorir() {
     }
   }
   $('legend').innerHTML = [...legenda].map(([n, t]) => `<span><i class="sw" style="background:${cor(n)}"></i>${esc(t)}</span>`).join('')
-    + (S.geoUf !== 'br' && S.mapa ? `<span style="margin-left:auto;color:var(--muted)">líder em cada cidade · ${CARGO_NM[S.cargo === '6' || S.cargo === '7' ? '1' : S.cargo]}</span>` : '');
+    + (S.geoUf !== 'br' && S.mapa ? `<span style="margin-left:auto;color:var(--muted)">líder em cada cidade · ${CARGO_NM[S.cargo]}</span>` : '');
 }
+
+/* ---------------- deputados por cidade (arquivos estáticos mapa/<uf>-c<cargo>.json) ---------------- */
+const DEPS = new Map();
+function dep(uf, c) {
+  c = cargoUF(uf, c);
+  const key = uf + '-c' + c;
+  if (!DEPS.has(key)) DEPS.set(key, getJSON(`mapa/${key}.json`, 5 * 60000).then(d => {
+    const cands = d.cands.map(([n, nm, sg, nmc], i) => ({ i, n, nm, sg, nmc, v: 0 }));
+    const mu = {};
+    let vv = 0, pstT = 0, pesoT = 0;
+    for (const cd in d.mu) {
+      const a = d.mu[cd], l = a.slice(2), m = { pst: a[0], vv: a[1], l, rank: null };
+      for (let j = 0; j < l.length; j += 2) cands[l[j]].v += l[j + 1];
+      vv += m.vv; mu[cd] = m;
+    }
+    const ord = [...cands].sort((a, b) => b.v - a.v);
+    ord.forEach((k, j) => { k.pos = j + 1; });
+    return { uf, cargo: c, cands, ord, mu, vv, porN: new Map(cands.map(k => [k.n, k])) };
+  }));
+  const p = DEPS.get(key); p.catch(() => DEPS.delete(key));
+  return p;
+}
+function votosEm(m, i) { for (let j = 0; j < m.l.length; j += 2) if (m.l[j] === i) return m.l[j + 1]; return 0; }
+function posEm(m, i) { for (let j = 0; j < m.l.length; j += 2) if (m.l[j] === i) return j / 2 + 1; return 0; }
+
+// votação de 2022 (mesmo arquivo usado pelo painel), casada pelo nome completo
+const H22 = new Map();
+function h22(uf) {
+  if (!H22.has(uf)) H22.set(uf, getJSON(`dados2022/${uf}.json`, Infinity).then(d => {
+    const by = new Map();
+    for (const c of d.c) { const k = norm(c[0]).replace(/\s+/g, ' ').trim(); (by.get(k) || by.set(k, []).get(k)).push({ cargo: c[4], sit: c[5], total: c[6], mun: c[7], n: c[2], sg: c[3] }); }
+    return by;
+  }).catch(() => new Map()));
+  return H22.get(uf);
+}
+function hist(by, k, c) {
+  const a = by && by.get(norm(k.nmc).replace(/\s+/g, ' ').trim());
+  if (!a) return null;
+  return a.find(x => x.cargo === c) || a.reduce((x, y) => y.total > x.total ? y : x);
+}
+// variação contra o que 2022 "prevê" com a mesma % de seções apuradas
+function delta(atual, v22, pst) {
+  const esp = v22 * (pst == null ? 1 : pst / 100);
+  if (!esp) return '';
+  const d = (atual / esp - 1) * 100;
+  return `<span style="color:${d >= 0 ? 'var(--good-text)' : 'var(--critical)'};font-weight:600">${d >= 0 ? '▲ +' : '▼ '}${pc(d)}</span>`;
+}
+S.H = null; // índice de 2022 do estado aberto
 
 // resultados por estado (para o mapa do Brasil e os painéis de região)
 S.ufRes = {};
@@ -474,9 +556,34 @@ async function carregarEstados(c, depois) {
 }
 
 /* tooltip */
-svg.addEventListener('mousemove', e => {
-  const p = e.target.closest('path');
-  if (!p) { tip.style.display = 'none'; return; }
+function tipDep(p) {
+  const D = S.depAtual, m0 = S.geo.mu.find(x => x.t === p.dataset.t);
+  let h = `<b>${esc(cap(m0?.n))}</b>`;
+  if (!D || D.uf !== S.uf || D.cargo !== cargoUF(S.uf, S.cargo)) return h + '<span style="color:var(--muted)">carregando…</span>';
+  const m = D.mu[p.dataset.t];
+  if (!m) return h + '<span style="color:var(--muted)">sem dados</span>';
+  const c = D.cargo, k = S.cand && D.porN.get(S.cand);
+  const linha22 = (cand, v) => {
+    const H = hist(S.H, cand, c);
+    if (!S.H) return '';
+    if (!H) return `<span style="color:var(--muted)">não concorreu a deputado em 2022</span>`;
+    const v22 = H.mun[p.dataset.t] || 0;
+    return `<span style="color:var(--muted)">2022: ${fmt(v22)}</span> ${delta(v, v22, m.pst)}`;
+  };
+  if (k) {
+    const v = votosEm(m, k.i), pos = posEm(m, k.i);
+    return h + `<i class="sw" style="background:${cor(k.n)}"></i>${esc(cap(k.nm))} (${esc(k.sg)})<br>
+      <b style="display:inline;font-size:15px">${fmt(v)}</b> votos · ${pc(m.vv ? v / m.vv * 100 : 0, 2)} da cidade${pos ? ` · ${pos}º` : ''}<br>${linha22(k, v)}`;
+  }
+  const lin = [];
+  for (let j = 0; j < Math.min(m.l.length, 10); j += 2) {
+    const kk = D.cands[m.l[j]], v = m.l[j + 1];
+    lin.push(`<i class="sw" style="background:${cor(kk.n)}"></i>${esc(cap(kk.nm))} <span style="color:var(--muted)">${esc(kk.sg)}</span> · ${fmt(v)} (${pc(m.vv ? v / m.vv * 100 : 0)})<br><span style="margin-left:15px"></span>${linha22(kk, v)}`);
+  }
+  return h + lin.join('<br>') + `<br><span style="color:var(--muted)">${fmt(m.vv)} votos válidos · ${pc(m.pst, 1)} apurado</span>`;
+}
+function tipHtml(p) {
+  if (p.dataset.t && !MAJ(S.cargo)) return tipDep(p);
   let h = '';
   if (p.dataset.uf) {
     const uf = p.dataset.uf, r = S.ufRes?.[S.cargo]?.[uf];
@@ -484,18 +591,36 @@ svg.addEventListener('mousemove', e => {
     if (r) { const vv = num(r.v?.vv); h += cands(r).slice(0, 3).map(k => `<i class="sw" style="background:${cor(k.n)}"></i>${esc(cap(k.nm))} · ${pc(vv ? k.v / vv * 100 : 0)}`).join('<br>') + `<br><span style="color:var(--muted)">${pc(num(r.s?.pstn), 2)} das seções</span>`; }
   } else {
     const m = S.geo.mu.find(x => x.t === p.dataset.t);
-    const c = S.cargo === '6' || S.cargo === '7' ? '1' : S.cargo;
+    const c = S.cargo;
     const d = S.mapa?.mu?.[p.dataset.t]?.[c];
     h = `<b>${esc(cap(m?.n))}</b>`;
-    if (d) h += d[2].slice(0, 3).map(([n, v]) => { const nm = S.mapa.nomes[c]?.[n]; return `<i class="sw" style="background:${cor(n)}"></i>${esc(cap(nm ? nm[0] : n))} · ${pc(d[1] ? v / d[1] * 100 : 0)}`; }).join('<br>');
+    if (d) h += d[2].slice(0, 3).map(([n, v]) => { const nm = S.mapa.nomes[c]?.[n]; return `<i class="sw" style="background:${cor(n)}"></i>${esc(cap(nm ? nm[0] : n))} · ${fmt(v)} (${pc(d[1] ? v / d[1] * 100 : 0)})`; }).join('<br>');
   }
-  tip.innerHTML = h; tip.style.display = 'block';
-  const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8);
-  tip.style.left = x + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+  return h;
+}
+function mostraTip(p, x, y, toque) {
+  tip.innerHTML = tipHtml(p) + (toque ? `<div style="color:var(--accent);margin-top:4px">toque de novo para abrir</div>` : '');
+  tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.max(8, Math.min(x + 14, innerWidth - w - 8)) + 'px';
+  // no toque, a caixa fica acima do dedo
+  tip.style.top = (toque ? Math.max(8, y - h - 24) : Math.min(y + 14, innerHeight - h - 8)) + 'px';
+}
+let ultimoToque = null, eraToque = false;
+svg.addEventListener('pointerdown', e => { eraToque = e.pointerType !== 'mouse'; });
+svg.addEventListener('mousemove', e => {
+  if (eraToque) return;
+  const p = e.target.closest('path');
+  if (!p) { tip.style.display = 'none'; return; }
+  mostraTip(p, e.clientX, e.clientY);
 });
-svg.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+svg.addEventListener('mouseleave', () => { if (!eraToque) tip.style.display = 'none'; });
+document.addEventListener('scroll', () => { if (eraToque) { tip.style.display = 'none'; ultimoToque = null; } }, { passive: true });
 svg.addEventListener('click', e => {
-  const p = e.target.closest('path'); if (!p) return;
+  const p = e.target.closest('path'); if (!p) { tip.style.display = 'none'; ultimoToque = null; return; }
+  // celular: 1º toque mostra os números da área, 2º toque na mesma área abre
+  if (eraToque && p.dataset.t && ultimoToque !== p) { ultimoToque = p; mostraTip(p, e.clientX, e.clientY, true); return; }
+  ultimoToque = null;
   tip.style.display = 'none';
   if (p.dataset.uf) {
     const uf = p.dataset.uf, r = regDe(uf);
@@ -507,7 +632,7 @@ $('back').onclick = () => {
   const n = nivel();
   vaiPara(n === 'sec' ? { sec: '' } : n === 'zona' ? { zona: '' } : n === 'mun' ? { mun: '' } : n === 'uf' ? { uf: '' } : { reg: '' });
 };
-$('cargos').addEventListener('click', e => { const b = e.target.closest('button'); if (b) vaiPara({ cargo: b.dataset.c }); });
+$('cargos').addEventListener('click', e => { const b = e.target.closest('button'); if (b) vaiPara({ cargo: b.dataset.c, cand: '' }); });
 
 /* ---------------- painel ---------------- */
 function situacao(k, i, r, c) {
@@ -576,6 +701,8 @@ async function painel() {
         ${c === '1' ? `<div class="stats"><div class="stat"><span>Seções apuradas</span><b>${pc(s.p, 2)}</b></div><div class="stat"><span>Votos válidos</span><b>${fmt(s.vv)}</b></div></div>
         <h3>Presidente na região</h3>${linhas(s.l.slice(0, 6), s.vv)}` : ''}
         <h3>Estados</h3>${listaEstados(R.ufs, c)}`;
+    } else if (n === 'uf' && !MAJ(c)) {
+      await painelDep(vivo);
     } else if (n === 'uf') {
       P.innerHTML = `<h2>${UF_NM[S.uf]}</h2><div class="sub">carregando resultado…</div>`;
       const r = await getJSON(urlRes(S.uf, '', c));
@@ -754,15 +881,85 @@ function migalhas() {
   if (S.zona) h.push(n === 'zona' ? `<b>Zona ${Number(S.zona)}</b>` : `<a href="${hashDe({ sec: '' })}">Zona ${Number(S.zona)}</a>`);
   if (S.sec) h.push(`<b>Seção ${Number(S.sec)}</b>`);
   $('crumbs').innerHTML = h.join('<span>›</span>');
-  const fundo = !!S.mun;
+  const fundo = !!S.uf;
   $('cargos').querySelectorAll('button').forEach(b => { b.hidden = !fundo && !MAJ(b.dataset.c); b.classList.toggle('on', b.dataset.c === S.cargo); });
 }
+/* painel do estado para deputados: ranking, busca de candidato e votação por cidade com 2022 */
+async function painelDep(vivo) {
+  const P = $('panel');
+  P.innerHTML = `<h2>${UF_NM[S.uf]}</h2><div class="sub">carregando votação por cidade…</div>`;
+  const [D, H] = await Promise.all([dep(S.uf, S.cargo), h22(S.uf)]);
+  if (!vivo()) return;
+  const c = D.cargo, k = S.cand && D.porN.get(S.cand);
+  const v22 = cand => { const x = hist(H, cand, c); return x ? x.total : null; };
+  const pstUF = (() => { let t = 0, w = 0; for (const cd in D.mu) { t += D.mu[cd].pst * D.mu[cd].vv; w += D.mu[cd].vv; } return w ? t / w : 0; })();
+  const linhaCand = x => {
+    const t22 = v22(x);
+    return `<button class="li" data-cand="${x.n}"><div><div class="t">${x.pos}º · ${esc(cap(x.nm))} <small style="color:var(--muted);font-weight:400">${esc(x.sg)} · ${x.n}</small></div>
+      <div class="m">${t22 == null ? 'não concorreu a deputado em 2022' : `2022: ${fmt(t22)} ${delta(x.v, t22, pstUF)}`}</div></div>
+      <div class="x"><b>${fmt(x.v)}</b><br>${pc(D.vv ? x.v / D.vv * 100 : 0, 2)}</div></button>`;
+  };
+  let h = `<h2>${UF_NM[S.uf]} <small class="sub">${CARGO_NM[c]}</small></h2>
+    <div class="sub">Passe o mouse (ou toque) nas cidades para ver os votos e a comparação com 2022.</div>
+    <h3>Candidato</h3><input class="search" id="buscaCand" placeholder="Buscar por nome ou número…" autocomplete="off" value="">
+    <div class="list" id="cands"></div>`;
+  if (k) {
+    const H2 = hist(H, k, c), t22 = H2 ? H2.total : null;
+    const cid = Object.entries(D.mu).map(([cd, m]) => ({ cd, m, v: votosEm(m, k.i), v22: H2 ? (H2.mun[cd] || 0) : null }))
+      .filter(x => x.v || x.v22).sort((a, b) => b.v - a.v);
+    const nome = cd => cap(S.geo.mu.find(x => x.t === cd)?.n || cd);
+    h = `<h2>${esc(cap(k.nm))} <small class="sub">${esc(k.sg)} · ${k.n} · ${CARGO_NM[c]}</small></h2>
+      <div class="sub">${UF_NM[S.uf]} · <a href="${hashDe({ cand: '' })}">trocar candidato</a></div>
+      <div class="stats">
+        <div class="stat"><span>Votos</span><b>${fmt(k.v)}</b></div>
+        <div class="stat"><span>% dos válidos</span><b>${pc(D.vv ? k.v / D.vv * 100 : 0, 2)}</b></div>
+        <div class="stat"><span>Posição no estado</span><b>${k.pos}º</b></div>
+        <div class="stat"><span>Em 2022</span><b>${t22 == null ? '—' : fmt(t22)}</b>${t22 ? `<div style="font-size:12px">${delta(k.v, t22, pstUF)}</div>` : ''}</div>
+      </div>
+      ${H2 ? `<div class="note">2022: ${CARGO_NM[H2.cargo] || ''} · ${esc(H2.sg)} ${H2.n} · ${esc(cap(H2.sit))}</div>` : ''}
+      <h3>Votação por cidade · ${cid.filter(x => x.v).length} cidades</h3>
+      <input class="search" id="buscaCid" placeholder="Buscar cidade…" autocomplete="off">
+      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:4px 12px;font-size:13px" id="tabCid"></div>
+      <a class="cta" href="painel.html?uf=${S.uf}&cargo=${CARGO_PAINEL[c]}&num=${k.n}">Ver no painel completo →</a>`;
+    P.innerHTML = h;
+    const desenha = () => {
+      const q = norm($('buscaCid').value);
+      const l = cid.filter(x => !q || norm(nome(x.cd)).includes(q)).slice(0, q ? 60 : 25);
+      $('tabCid').innerHTML = `<b class="m" style="color:var(--muted)">Cidade</b><b style="color:var(--muted);text-align:right">2026</b><b style="color:var(--muted);text-align:right">2022</b><b style="color:var(--muted);text-align:right">Δ</b>`
+        + l.map(x => `<a href="${hashDe({ mun: x.cd })}" style="color:var(--ink)">${esc(nome(x.cd))} <small style="color:var(--muted)">${posEm(x.m, k.i) ? posEm(x.m, k.i) + 'º' : ''}</small></a>
+          <span style="text-align:right">${fmt(x.v)} <small style="color:var(--muted)">${pc(x.m.vv ? x.v / x.m.vv * 100 : 0)}</small></span>
+          <span style="text-align:right;color:var(--ink-2)">${x.v22 == null ? '—' : fmt(x.v22)}</span>
+          <span style="text-align:right">${x.v22 ? delta(x.v, x.v22, x.m.pst) : '—'}</span>`).join('')
+        + (!q && cid.length > 25 ? `<span class="note" style="grid-column:1/-1">As 25 cidades com mais votos. Use a busca para as demais.</span>` : '');
+    };
+    $('buscaCid').oninput = desenha; desenha();
+    return;
+  }
+  P.innerHTML = h;
+  const desenha = () => {
+    const q = norm($('buscaCand').value).trim();
+    const l = q ? D.ord.filter(x => x.v && (norm(x.nm).includes(q) || x.n.startsWith(q))).slice(0, 30) : D.ord.slice(0, 20);
+    $('cands').innerHTML = l.map(linhaCand).join('') + (!q ? `<div class="note">Os 20 mais votados. Busque para ver os demais.</div>` : '');
+  };
+  $('buscaCand').oninput = desenha; desenha();
+}
+$('panel').addEventListener('click', e => {
+  const b = e.target.closest('[data-cand]'); if (!b) return;
+  e.stopPropagation(); vaiPara({ cand: b.dataset.cand });
+}, true);
+
 async function ir() {
   lerHash();
   const novo = await desenhar();
   if (S.uf && S.mapa?.uf !== S.uf) {
     S.mapa = null;
     getJSON(`mapa/${S.uf}.json`, 5 * 60000).then(d => { S.mapa = d; colorir(); if (nivel() === 'uf') painel(); }).catch(() => {});
+  }
+  if (S.uf && !MAJ(S.cargo)) {
+    const uf = S.uf;
+    if (S.Huf !== uf) { S.H = null; S.Huf = uf; }
+    h22(uf).then(H => { if (S.uf === uf) S.H = H; });
+    dep(uf, S.cargo).then(D => { if (S.uf === uf) S.depAtual = D; }).catch(() => {});
   }
   migalhas(); destacar(); enquadrar(novo); colorir(); painel();
 }
