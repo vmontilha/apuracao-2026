@@ -271,7 +271,7 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
 </div></footer>
 <div class="tip" id="tip"></div>
 
-<script src="js/espectro.js?v=20261006g"></script>
+<script src="js/espectro.js?v=20261006h"></script>
 <script>
 'use strict';
 /* ---------------- constantes ---------------- */
@@ -893,6 +893,17 @@ function listaEstados(ufs, c) {
   }).join('')}</div>`;
 }
 
+// campo de busca de candidato com sugestões (a lógica fica em js/comparar.js: buscaCandidato)
+function campoBusca(id, dica, k) {
+  return `<div class="ac" id="${id}" style="margin:4px 0 8px"><div style="display:flex;gap:6px;align-items:center">
+    <input class="sel-cand" style="margin:0" placeholder="🔎 ${esc(dica)}" autocomplete="off" value="${k ? esc(cap(k.nm) + ' (' + (k.sg || '') + ' ' + k.n + ')') : ''}">
+    ${k ? `<button class="chip" data-limpacand style="cursor:pointer;white-space:nowrap">✕ limpar</button>` : ''}</div><div class="ac-lista" hidden></div></div>`;
+}
+function ligaBusca(id, lista) {
+  const box = $(id); if (!box) return;
+  buscaCandidato(box, lista, n => { document.activeElement?.blur(); vaiPara({ cand: n }); });
+  const b = box.querySelector('[data-limpacand]'); if (b) b.onclick = () => vaiPara({ cand: '' });
+}
 // seletor do ano de comparação (2022, 2018, 2014)
 function selAno() {
   return `<div class="filtros" style="margin:8px 0 0"><span class="sub">Comparar com</span><div class="seg">${['2022', '2018', '2014'].map(a => `<button data-ano="${a}" class="${a === S.anoCmp ? 'on' : ''}">${a}</button>`).join('')}</div></div>`;
@@ -1015,15 +1026,14 @@ async function painel() {
       P.innerHTML = `<h2>${esc(nome)} <small class="sub">${S.uf.toUpperCase()}</small></h2>
         <div class="sub">${zonas.length} zona${zonas.length === 1 ? '' : 's'} eleitora${zonas.length === 1 ? 'l' : 'is'} · ${fmt(zonas.reduce((s, z) => s + z.sec.length, 0))} seções</div>
         ${selAno()}
-        <select class="sel-cand" id="selCand"><option value="">🔎 Analisar um candidato (votos por zona e por seção)…</option>
-          ${lc.filter(x => x.v).slice(0, 400).map(x => `<option value="${x.n}" ${x.n === S.cand ? 'selected' : ''}>${esc(cap(x.nm))} (${esc(x.sg)} ${x.n}) · ${fmt(x.v)}</option>`).join('')}</select>
+        ${campoBusca('acCid', 'Analisar um candidato: digite o nome ou o número…', k)}
         ${cardCand}
         ${resultadoTSE(r, c, MAJ(c) ? 8 : 15)}
         <h3>Zonas eleitorais${k ? ' · votos de ' + esc(cap(k.nm)) : ''}</h3>
         <div class="list">${zonasOrd.map(linhaZona).join('') || '<div class="empty">Zonas indisponíveis.</div>'}</div>
         ${zonas.length > 1 && !zm ? `<div class="note">${c === '1' ? 'O TSE ainda não publicou a votação de presidente por zona; abra uma zona para somar os boletins de urna.' : 'Sem dados por zona para este cargo.'}</div>` : ''}
         ${zonas.length === 1 ? '<div class="note">Cidade com uma única zona: o resultado da zona é o da cidade.</div>' : ''}`;
-      $('selCand').onchange = e => vaiPara({ cand: e.target.value });
+      ligaBusca('acCid', lc.map(x => ({ n: x.n, nmu: x.nm, nm: x.nmc || x.nm, sg: x.sg, total: x.v })));
     } else if (n === 'zona') {
       await painelZona(vivo);
     } else {
@@ -1125,7 +1135,7 @@ async function painelZona(vivo) {
           <div class="stat"><span>% dos válidos</span><b>${pc(tT ? vT / tT * 100 : 0, 2)}</b></div>
           <div class="stat"><span>Seções com voto</span><b>${vs.filter(x => x.v).length} / ${vs.filter(x => x.v != null).length}</b></div>
           <div class="stat"><span>${S.anoCmp} ${ant?.onde || ''}</span><b>${ant?.v == null ? '—' : fmt(ant.v)}</b>${ant?.v && ant.onde === 'nesta zona' && feito >= tot ? `<div style="font-size:12px">${delta(vT, ant.v)}</div>` : ''}</div></div>
-        <h3>Seções onde ele foi melhor</h3>
+        <h3>Seções com melhor desempenho</h3>
         <table class="tab"><thead><tr><th>Seção</th><th class="n">Votos</th><th class="n">% da seção</th></tr></thead><tbody>
           ${melhores.map(x => `<tr data-sec="${x.ns}" style="cursor:pointer"><td>Seção ${Number(x.ns)}</td><td class="n">${fmt(x.v)}</td><td class="n">${pc(x.t ? x.v / x.t * 100 : 0, 1)}</td></tr>`).join('')}</tbody></table>`;
       grade = vs.map(x => `<button data-sec="${x.ns}" class="${Z.err.has(x.ns) ? 'err' : ''}" title="Seção ${Number(x.ns)}: ${x.v == null ? '…' : fmt(x.v) + ' votos'}"
@@ -1133,14 +1143,14 @@ async function painelZona(vivo) {
     } else {
       grade = z.sec.map(s => { const l = lider(s.ns); return `<button data-sec="${s.ns}" class="${Z.err.has(s.ns) ? 'err' : ''}" title="Seção ${Number(s.ns)}">${Number(s.ns)}${l ? `<i style="background:${cor(l)}"></i>` : ''}</button>`; }).join('');
     }
-    const opcoes = Object.entries(ag.nom).sort((a, b) => b[1] - a[1]).slice(0, 400)
-      .map(([n, v]) => { const kk = N?.cand.get(n); return `<option value="${n}" ${n === S.cand ? 'selected' : ''}>${esc(cap(kk ? kk.nm : 'Candidato ' + n))} (${esc(kk?.sg || '')} ${n}) · ${fmt(v)}</option>`; }).join('');
-    const foco = document.activeElement?.id === 'selCandZ';
+    const listaZ = Object.entries(ag.nom).sort((a, b) => b[1] - a[1])
+      .map(([n, v]) => { const kk = N?.cand.get(n); return { n, nmu: kk ? kk.nm : 'Candidato ' + n, nm: kk?.nmc || '', sg: kk?.sg || '', total: v }; });
+    const foco = !!document.activeElement?.closest?.('#acZona');
     if (foco) return; // não redesenha enquanto a pessoa escolhe na lista
     P.innerHTML = `${titulo}
       <div class="sub">${tot} seções · resultado somado dos boletins de urna${feito < tot ? ` — lendo ${feito} de ${tot}…` : ''}</div>
       ${feito < tot ? `<div class="prog"><i style="width:${(feito / tot * 100).toFixed(1)}%"></i></div>` : ''}
-      <select class="sel-cand" id="selCandZ"><option value="">🔎 Analisar um candidato nesta zona…</option>${opcoes}</select>
+      ${campoBusca('acZona', 'Analisar um candidato nesta zona: digite o nome ou o número…', k)}
       <div class="stats">
         <div class="stat"><span>Eleitores aptos</span><b>${fmt(ag.aptos)}</b></div>
         <div class="stat"><span>Comparecimento</span><b>${fmt(ag.compar)}</b></div>
@@ -1151,7 +1161,7 @@ async function painelZona(vivo) {
       <div class="grid-sec">${grade}</div>
       <div class="note">${k ? 'Clique numa seção para abrir o boletim.' : `A barrinha colorida indica quem liderou na seção (${CARGO_NM[c]}). Clique para abrir o boletim.`}</div>
       ${Z.res.size ? blocoCargo(ag, N, c, MAJ(c) ? 8 : 15) : ''}`;
-    $('selCandZ').onchange = e => vaiPara({ cand: e.target.value });
+    ligaBusca('acZona', listaZ);
   };
   render();
   let ult = 0;
@@ -1322,11 +1332,11 @@ function mostraAba() {
 }
 addEventListener('DOMContentLoaded', ir);
 </script>
-<script src="js/congresso.js?v=20261006g"></script>
-<script src="js/partidos.js?v=20261006g"></script>
-<script src="js/historico.js?v=20261006g"></script>
-<script src="js/comparar.js?v=20261006g"></script>
-<script src="js/contador.js?v=20261006g"></script>
-<script src="js/anuncios.js?v=20261006g"></script>
+<script src="js/congresso.js?v=20261006h"></script>
+<script src="js/partidos.js?v=20261006h"></script>
+<script src="js/historico.js?v=20261006h"></script>
+<script src="js/comparar.js?v=20261006h"></script>
+<script src="js/contador.js?v=20261006h"></script>
+<script src="js/anuncios.js?v=20261006h"></script>
 </body>
 </html>
