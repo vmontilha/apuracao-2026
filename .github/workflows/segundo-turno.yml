@@ -1,0 +1,41 @@
+# Atualiza sozinho o resumo das cidades do 2º turno (mapa/<uf>-t2.json) durante a apuração de 25/10/2026.
+# Horários em UTC: 19h-23h do dia 25 e 0h-4h do dia 26 (16h às 1h de Brasília), a cada 10 minutos.
+# Também pode ser rodado à mão na aba Actions do GitHub ("Run workflow").
+name: Mapa do 2º turno
+
+on:
+  schedule:
+    - cron: '3-59/10 19-23 25 10 *'
+    - cron: '3-59/10 0-4 26 10 *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mapa-segundo-turno
+  cancel-in-progress: false
+
+jobs:
+  atualiza:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Gera o resumo das cidades do 2º turno
+        run: python ferramentas/gerar_mapa.py --t2 --saida mapa
+      - name: Publica se mudou
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add mapa
+          if git diff --cached --quiet; then
+            echo "Sem mudanças"
+          else
+            git commit -m "Mapa do 2º turno: atualização automática"
+            git pull --rebase
+            git push
+          fi

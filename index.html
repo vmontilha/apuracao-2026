@@ -229,6 +229,7 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
           <button data-c="1">Presidente</button><button data-c="3">Governador</button><button data-c="5">Senador</button>
           <button data-c="6">Dep. Federal</button><button data-c="7">Dep. Estadual</button>
         </div>
+        <div class="seg" id="turnos" hidden><button data-t="1">1º turno</button><button data-t="2">2º turno</button></div>
       </div>
       <div class="mapbox">
         <svg id="map" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa"></svg>
@@ -266,6 +267,15 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
 const T = 'https://resultados.tse.jus.br/oficial/ele2026';
 const ELE = { '1': '6257', '3': '6259', '5': '6259', '6': '6259', '7': '6259', '8': '6259' };
 const PLEITO = '3220';
+// 2º turno: códigos "cdt2" da configuração do TSE (comum/config/ele-c.json); o pleito do arquivo de urnas
+// do 2º turno é descoberto nessa mesma configuração quando o TSE publicar. ?simt2 na URL simula com os dados do 1º turno.
+const SIMT2 = /[?&]simt2\b/.test(location.search);
+const T2 = SIMT2 ? { '1': '6257', '3': '6259' } : { '1': '6258', '3': '6260' };
+let PLEITO2 = SIMT2 ? PLEITO : '';
+const temT2 = c => c === '1' || c === '3';
+const tEf = c => (temT2(c) && S.turno === '2') ? '2' : '1';
+const eleDo = (c, t = tEf(c)) => (t === '2' && T2[c]) ? T2[c] : ELE[c];
+const pleitoDo = () => (S.turno === '2' && PLEITO2) ? PLEITO2 : PLEITO;
 const CARGO_NM = { '1': 'Presidente', '3': 'Governador', '5': 'Senador', '6': 'Deputado Federal', '7': 'Deputado Estadual', '8': 'Deputado Distrital' };
 const CARGO_PAINEL = { '1': 'presidente', '3': 'governador', '5': 'senador', '6': 'federal', '7': 'estadual', '8': 'distrital' };
 const MAJ = c => c === '1' || c === '3' || c === '5';
@@ -319,8 +329,9 @@ async function pool(items, n, fn) {
 }
 
 const cargoUF = (uf, c) => (uf === 'df' && c === '7') ? '8' : c;
-function urlRes(uf, mun, c) { c = cargoUF(uf, c); return `${T}/${ELE[c]}/dados/${uf}/${uf}${mun || ''}-c${pad(c, 4)}-e${pad(ELE[c], 6)}-u.json`; }
-const urlFoto = (c, uf, sq) => `${T}/${ELE[c]}/fotos/${c === '1' ? 'br' : uf}/${sq}.jpeg`;
+function urlRes(uf, mun, c, t) { c = cargoUF(uf, c); const e = eleDo(c, t); return `${T}/${e}/dados/${uf}/${uf}${mun || ''}-c${pad(c, 4)}-e${pad(e, 6)}-u.json`; }
+const urlBr = t => { const e = eleDo('1', t); return `${T}/${e}/dados/br/br-c0001-e${pad(e, 6)}-u.json`; };
+const urlFoto = (c, uf, sq) => `${T}/${eleDo(c)}/fotos/${c === '1' ? 'br' : uf}/${sq}.jpeg`;
 
 // candidatos de um arquivo de resultado do TSE
 function cands(r) {
@@ -392,14 +403,14 @@ function lerBU(b) {
   }
   return out;
 }
-const dirSecao = (uf, mun, z, s) => `${T}/arquivo-urna/${PLEITO}/dados/${uf}/${mun}/${z}/${s}`;
+const dirSecao = (uf, mun, z, s) => `${T}/arquivo-urna/${pleitoDo()}/dados/${uf}/${mun}/${z}/${s}`;
 const secCache = new Map();
 function secao(uf, mun, z, s) {
-  const key = [uf, mun, z, s].join('/');
+  const key = [pleitoDo(), uf, mun, z, s].join('/');
   if (secCache.has(key)) return secCache.get(key);
   const p = (async () => {
     const dir = dirSecao(uf, mun, z, s);
-    const aux = await getJSON(`${dir}/p00${PLEITO}-${uf}-m${mun}-z${z}-s${s}-aux.json`, 10 * 60000);
+    const aux = await getJSON(`${dir}/p00${pleitoDo()}-${uf}-m${mun}-z${z}-s${s}-aux.json`, 10 * 60000);
     const arqDe = h => (h.arq || h.nmarq || []).map(a => typeof a === 'string' ? a : a.nm);
     const h = [...(aux.hashes || [])].reverse().find(h => arqDe(h).some(n => /-bu\.dat$/i.test(n)));
     if (!h) return { st: aux.st || 'sem boletim', semBU: true };
@@ -428,12 +439,15 @@ function lerHash() {
   else if (p[0] && UF_NM[p[0]]) { S.uf = p[0]; S.reg = regDe(S.uf); S.mun = p[1] || ''; S.zona = p[2] ? pad(p[2], 4) : ''; S.sec = p[3] ? pad(p[3], 4) : ''; }
   S.cargo = c && CARGO_NM[c] ? c : '1';
   S.cand = new URLSearchParams(q || '').get('k') || '';
+  const tq = new URLSearchParams(q || '').get('t');
+  S.turnoQ = tq === '1' || tq === '2' ? tq : '';
+  S.turno = S.turnoQ || (S.t2vivo ? '2' : '1');
   const a = new URLSearchParams(q || '').get('a'); S.anoCmp = ['2022', '2018', '2014'].includes(a) ? a : '2022';
 }
 function hashDe(o = {}) {
   const x = { ...S, ...o };
   const p = x.uf ? [x.uf, x.mun, x.zona, x.sec].filter(Boolean) : (x.reg ? [x.reg] : []);
-  const qs = [x.cargo !== '1' ? 'c=' + x.cargo : '', x.cand ? 'k=' + x.cand : '', x.anoCmp && x.anoCmp !== '2022' ? 'a=' + x.anoCmp : ''].filter(Boolean).join('&');
+  const qs = [x.cargo !== '1' ? 'c=' + x.cargo : '', x.cand ? 'k=' + x.cand : '', x.anoCmp && x.anoCmp !== '2022' ? 'a=' + x.anoCmp : '', x.turnoQ ? 't=' + x.turnoQ : ''].filter(Boolean).join('&');
   return '#/' + p.join('/') + (qs ? '?' + qs : '');
 }
 const nivel = () => S.sec ? 'sec' : S.zona ? 'zona' : S.mun ? 'mun' : S.uf ? 'uf' : S.reg ? 'reg' : 'br';
@@ -525,9 +539,10 @@ async function colorir() {
   if (S.geoUf === 'br') {
     const c = S.cargo;
     await carregarEstados(c, () => colorir());
+    if (tEf(c) === '2') carregarEstados(c, null, '1');
     const Rant = await resumo(S.anoCmp).catch(() => null); S.Rant = Rant;
     for (const p of svg.querySelectorAll('path[data-uf]')) {
-      const r = S.ufRes?.[c]?.[p.dataset.uf];
+      const r = S.ufRes?.[ufKey(c)]?.[p.dataset.uf];
       const l = r && cands(r)[0];
       const vv = r ? num(r.v?.vv) : 0;
       pinta(p, l && l.v ? l.n : '', l && vv ? l.v / vv : 0);
@@ -566,7 +581,7 @@ async function colorir() {
       + `<span style="margin-left:auto;color:var(--muted)">mais votado em cada cidade · ${CARGO_NM[cargoUF(S.uf, S.cargo)]}</span>`;
     return;
   } else {
-    const M = S.mapa, c = S.cargo;
+    const M = mapaAtual(), c = S.cargo;
     for (const p of svg.querySelectorAll('path[data-t]')) {
       const d = M?.mu?.[p.dataset.t]?.[c];
       const l = d && d[2][0];
@@ -575,7 +590,7 @@ async function colorir() {
     }
   }
   $('legend').innerHTML = [...legenda].map(([n, t]) => `<span><i class="sw" style="background:${cor(n)}"></i>${esc(t)}</span>`).join('')
-    + (S.geoUf !== 'br' && S.mapa ? `<span style="margin-left:auto;color:var(--muted)">líder em cada cidade · ${CARGO_NM[S.cargo]}</span>` : '');
+    + (S.geoUf !== 'br' && mapaAtual() ? `<span style="margin-left:auto;color:var(--muted)">líder em cada cidade · ${CARGO_NM[S.cargo]}</span>` : '');
 }
 
 /* ---------------- deputados por cidade (arquivos estáticos mapa/<uf>-c<cargo>.json) ---------------- */
@@ -651,14 +666,50 @@ S.H = null; // índice de 2022 do estado aberto
 // resultados por estado (para o mapa do Brasil e os painéis de região)
 S.ufRes = {};
 const carregando = new Set();
-async function carregarEstados(c, depois) {
-  S.ufRes[c] = S.ufRes[c] || {};
-  const falta = Object.keys(UF_NM).filter(uf => !S.ufRes[c][uf]);
-  if (!falta.length || carregando.has(c)) return;
-  carregando.add(c);
-  pool(falta, 8, async uf => { try { S.ufRes[c][uf] = await getJSON(urlRes(uf, '', c)); } catch (e) {} })
-    .then(() => { carregando.delete(c); if (S.cargo === c) { depois && depois(); if (nivel() === 'br' || nivel() === 'reg') painel(); } });
+const ufKey = (c, t = tEf(c)) => c + '|' + t;
+async function carregarEstados(c, depois, t = tEf(c)) {
+  const k = ufKey(c, t);
+  S.ufRes[k] = S.ufRes[k] || {};
+  const falta = Object.keys(UF_NM).filter(uf => !S.ufRes[k][uf]);
+  if (!falta.length || carregando.has(k)) return;
+  carregando.add(k);
+  pool(falta, 8, async uf => { try { S.ufRes[k][uf] = await getJSON(urlRes(uf, '', c, t)); } catch (e) {} })
+    .then(() => { carregando.delete(k); if (S.cargo === c) { depois && depois(); if (nivel() === 'br' || nivel() === 'reg') painel(); } });
 }
+
+// resumo das cidades do turno em exibição
+const mapaAtual = () => tEf(S.cargo) === '2' ? (S.mapa2?.uf === S.uf ? S.mapa2 : null) : S.mapa;
+// 2º turno x 1º turno de 2026 para o mesmo candidato (pelo número)
+function cmpT1(n, share, ant) {
+  if (ant == null) return '';
+  return `<span style="color:var(--muted)">1º turno: ${pc(ant * 100, 1)}</span> ${pp(share, ant)}`;
+}
+function shareT1Estado(uf, c, n) {
+  const r = S.ufRes?.[ufKey(c, '1')]?.[uf]; if (!r) return null;
+  const k = cands(r).find(x => x.n === n), vv = num(r.v?.vv);
+  return k && vv ? k.v / vv : null;
+}
+function shareT1Cidade(cd, c, n) {
+  const d = S.mapa?.mu?.[cd]?.[c]; if (!d || !d[1]) return null;
+  const x = d[2].find(y => y[0] === n);
+  return x ? x[1] / d[1] : null;
+}
+// descobre se o 2º turno já começou (arquivo nacional de presidente do 2º turno publicado pelo TSE)
+async function detectaT2() {
+  try {
+    if (!SIMT2) {
+      const cfg = await getJSON('https://resultados.tse.jus.br/oficial/comum/config/ele-c.json', 5 * 60000);
+      for (const p of cfg.pl || []) if ((p.e || []).some(e => e.cd === T2['1'])) PLEITO2 = p.cd;
+    }
+    const r = await getJSON(urlBr('2'), 60000);
+    const ok = !!r, vivo = num(r?.s?.st) > 0 || SIMT2;
+    if (ok !== S.t2ok || vivo !== S.t2vivo) {
+      S.t2ok = ok; S.t2vivo = vivo;
+      if (S.aba === 'mapa') { ir(); nacional(); }
+    }
+  } catch (e) { /* 2º turno ainda não publicado */ }
+}
+setInterval(() => { if (!document.hidden) detectaT2(); }, 5 * 60000);
 
 /* comparações com a eleição anterior */
 const cargoDep = (uf, c) => (uf === 'df' && c === '7') ? '8' : c;
@@ -728,23 +779,23 @@ function tipHtml(p) {
     return h + `<br><span style="color:var(--muted)">entre parênteses: diferença para ${S.anoCmp}</span>`;
   }
   if (p.dataset.uf) {
-    const uf = p.dataset.uf, r = S.ufRes?.[S.cargo]?.[uf];
+    const uf = p.dataset.uf, r = S.ufRes?.[ufKey(S.cargo)]?.[uf];
     h = `<b>${UF_NM[uf]}</b>`;
     if (r) {
       const vv = num(r.v?.vv), g = S.Rant?.uf?.[uf];
       const a1 = fatias(g?.[`c${S.cargo}t1`]), a2 = g?.[`c${S.cargo}t2`] ? fatias(g[`c${S.cargo}t2`]) : null;
-      h += cands(r).slice(0, 3).map(k => { const s = vv ? k.v / vv : 0; return `<i class="sw" style="background:${cor(k.n)}"></i>${esc(cap(k.nm))} <span style="color:var(--muted)">${esc(k.sg)}</span> · ${pc(s * 100)}<br><span style="margin-left:15px"></span>${S.Rant ? cmpMaj(k.sg, s, a1, a2) : ''}`; }).join('<br>')
+      h += cands(r).slice(0, 3).map(k => { const s = vv ? k.v / vv : 0; return `<i class="sw" style="background:${cor(k.n)}"></i>${esc(cap(k.nm))} <span style="color:var(--muted)">${esc(k.sg)}</span> · ${pc(s * 100)}<br><span style="margin-left:15px"></span>${tEf(S.cargo) === '2' ? cmpT1(k.n, s, shareT1Estado(uf, S.cargo, k.n)) : S.Rant ? cmpMaj(k.sg, s, a1, a2) : ''}`; }).join('<br>')
         + `<br><span style="color:var(--muted)">${pc(num(r.s?.pstn), 2)} das seções</span>`;
     }
   } else {
     const m = S.geo.mu.find(x => x.t === p.dataset.t);
     const c = S.cargo;
-    const d = S.mapa?.mu?.[p.dataset.t]?.[c];
+    const M = mapaAtual(), d = M?.mu?.[p.dataset.t]?.[c];
     h = `<b>${esc(cap(m?.n))}</b>`;
     const a1 = S.H ? partCidade(S.H, c, '1', p.dataset.t) : null, a2 = S.H ? partCidade(S.H, c, '2', p.dataset.t) : null;
     if (d) h += d[2].slice(0, 3).map(([n, v]) => {
-      const nm = S.mapa.nomes[c]?.[n], s = d[1] ? v / d[1] : 0;
-      return `<i class="sw" style="background:${cor(n)}"></i>${esc(cap(nm ? nm[0] : n))} <span style="color:var(--muted)">${esc(nm ? nm[1] : '')}</span> · ${fmt(v)} (${pc(s * 100)})${S.H && nm ? `<br><span style="margin-left:15px"></span>${cmpMaj(nm[1], s, a1, a2)}` : ''}`;
+      const nm = M.nomes[c]?.[n], s = d[1] ? v / d[1] : 0;
+      return `<i class="sw" style="background:${cor(n)}"></i>${esc(cap(nm ? nm[0] : n))} <span style="color:var(--muted)">${esc(nm ? nm[1] : '')}</span> · ${fmt(v)} (${pc(s * 100)})${tEf(c) === '2' ? `<br><span style="margin-left:15px"></span>${cmpT1(n, s, shareT1Cidade(p.dataset.t, c, n))}` : S.H && nm ? `<br><span style="margin-left:15px"></span>${cmpMaj(nm[1], s, a1, a2)}` : ''}`;
     }).join('<br>');
   }
   return h;
@@ -784,6 +835,7 @@ $('back').onclick = () => {
   vaiPara(n === 'sec' ? { sec: '' } : n === 'zona' ? { zona: '' } : n === 'mun' ? { mun: '' } : n === 'uf' ? { uf: '' } : { reg: '' });
 };
 $('cargos').addEventListener('click', e => { const b = e.target.closest('button'); if (b) vaiPara({ cargo: b.dataset.c, cand: '' }); });
+$('turnos').addEventListener('click', e => { const b = e.target.closest('button'); if (b) vaiPara({ turnoQ: b.dataset.t }); });
 
 /* ---------------- painel ---------------- */
 function situacao(k, i, r, c) {
@@ -814,7 +866,7 @@ function resultadoTSE(r, c, lim = 8) {
 function somaEstados(c, ufs) {
   const m = new Map(); let vv = 0, ts = 0, st = 0;
   for (const uf of ufs) {
-    const r = S.ufRes?.[c]?.[uf]; if (!r) continue;
+    const r = S.ufRes?.[ufKey(c)]?.[uf]; if (!r) continue;
     vv += num(r.v?.vv); ts += num(r.s?.ts); st += num(r.s?.st);
     for (const k of cands(r)) { const x = m.get(k.n) || { ...k, v: 0 }; x.v += k.v; m.set(k.n, x); }
   }
@@ -822,7 +874,7 @@ function somaEstados(c, ufs) {
 }
 function listaEstados(ufs, c) {
   return `<div class="list">${ufs.map(uf => {
-    const r = S.ufRes?.[c]?.[uf]; const l = r ? cands(r) : []; const vv = r ? num(r.v?.vv) : 0;
+    const r = S.ufRes?.[ufKey(c)]?.[uf]; const l = r ? cands(r) : []; const vv = r ? num(r.v?.vv) : 0;
     const top = l.slice(0, c === '5' ? 2 : 1);
     return `<button class="li" data-go="${uf}"><div><div class="t">${UF_NM[uf]}</div>
       <div class="m">${top.map(k => `<i class="sw" style="background:${cor(k.n)}"></i>${esc(cap(k.nm))} ${pc(vv ? k.v / vv * 100 : 0)}`).join(' · ') || 'carregando…'}</div></div>
@@ -886,7 +938,7 @@ async function painel() {
       P.innerHTML = `<h2>${UF_NM[S.uf]}</h2><div class="sub">carregando resultado…</div>`;
       const r = await getJSON(urlRes(S.uf, '', c));
       if (!vivo()) return;
-      const M = S.mapa, mc = c;
+      const M = mapaAtual(), mc = c;
       const cidades = S.geo.mu.map(m => ({ ...m, d: M?.mu?.[m.t]?.[mc] })).sort((a, b) => (b.d?.[1] || 0) - (a.d?.[1] || 0));
       P.innerHTML = `<h2>${UF_NM[S.uf]}</h2><div class="sub">${S.geo.mu.length} municípios · clique numa cidade no mapa ou busque</div>${selAno()}
         ${resultadoTSE(r, c)}
@@ -985,14 +1037,14 @@ const zonaArq = (ano, uf, c) => getJSON(`zona/${ano}/${uf}-c${c}t1.json`, Infini
 
 /* zonas e seções (configuração do arquivo de urnas do TSE) */
 async function zonasDe(uf, mun) {
-  const cs = await getJSON(`${T}/arquivo-urna/${PLEITO}/config/${uf}/${uf}-p00${PLEITO}-cs.json`, 10 * 60000);
+  const cs = await getJSON(`${T}/arquivo-urna/${pleitoDo()}/config/${uf}/${uf}-p00${pleitoDo()}-cs.json`, 10 * 60000);
   for (const a of cs.abr || []) { const m = (a.mu || []).find(x => String(x.cd) === String(mun)); if (m) return m.zon || []; }
   return [];
 }
 // nomes dos candidatos e siglas dos partidos para mostrar o conteúdo do boletim
 async function nomes(uf, c) {
   c = cargoUF(uf, c);
-  const r = await getJSON(c === '1' ? `${T}/6257/dados/br/br-c0001-e006257-u.json` : urlRes(uf, '', c), 10 * 60000);
+  const r = await getJSON(c === '1' ? urlBr() : urlRes(uf, '', c), 10 * 60000);
   const m = new Map(cands(r).map(k => [k.n, k]));
   return { cand: m, part: partidos(r) };
 }
@@ -1017,7 +1069,7 @@ async function painelZona(vivo) {
   if (!vivo()) return;
   const titulo = `<h2>Zona ${Number(S.zona)} <small class="sub">${esc(cap(m?.n || ''))} · ${S.uf.toUpperCase()}</small></h2>`;
   if (!z) { P.innerHTML = titulo + '<div class="empty">Zona não encontrada.</div>'; return; }
-  const key = `${S.uf}/${S.mun}/${S.zona}`;
+  const key = `${pleitoDo()}/${S.uf}/${S.mun}/${S.zona}`;
   const Z = zonaCache.get(key) || { res: new Map(), err: new Set() };
   zonaCache.set(key, Z);
   const [N, Hm] = await Promise.all([nomes(S.uf, c).catch(() => null), h22(S.uf)]);
@@ -1130,14 +1182,14 @@ async function painelSecao(vivo) {
 /* ---------------- topo nacional ---------------- */
 async function nacional() {
   try {
-    S.br = await getJSON(`${T}/6257/dados/br/br-c0001-e006257-u.json`);
+    S.br = await getJSON(urlBr(S.turno === '2' ? '2' : '1'));
     const r = S.br, vv = num(r.v?.vv), l = cands(r).slice(0, 4);
     $('nacional').innerHTML = l.map(k => `<div class="cand-tile" style="--c:${cor(k.n)}">
       <img src="${urlFoto('1', 'br', k.sq)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">
       <div style="flex:1;min-width:0"><div class="nm">${esc(cap(k.nm))}${situacao(k)}</div><div class="pp">${esc(k.sg)} · ${fmt(k.v)} votos</div>
       <div class="big">${pc(vv ? k.v / vv * 100 : 0, 2)}</div><div class="bar"><i style="width:${vv ? k.v / vv * 100 : 0}%"></i></div></div></div>`).join('');
     const p = num(r.s?.pstn);
-    $('nacProg').innerHTML = `<span><span class="dot ${p < 100 ? 'on' : ''}"></span>${p < 100 ? 'Apuração em andamento' : 'Apuração do 1º turno concluída'}</span>
+    $('nacProg').innerHTML = `<span><span class="dot ${p < 100 ? 'on' : ''}"></span>${p < 100 ? 'Apuração do ' + (S.turno === '2' ? '2º' : '1º') + ' turno em andamento' : 'Apuração do ' + (S.turno === '2' ? '2º' : '1º') + ' turno concluída'}</span>
       <span>Presidente · ${pc(p, 2)} das seções apuradas</span><span>Comparecimento ${fmt(r.e?.c)}</span><span>Atualizado ${esc(r.hg || r.ht || '')}</span>`;
     if (nivel() === 'br' && S.cargo === '1') painel();
   } catch (e) { $('nacProg').textContent = 'Não foi possível ler o TSE agora.'; }
@@ -1154,6 +1206,8 @@ function migalhas() {
   if (S.sec) h.push(`<b>Seção ${Number(S.sec)}</b>`);
   $('crumbs').innerHTML = h.join('<span>›</span>');
   $('cargos').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.c === S.cargo); });
+  $('turnos').hidden = !(S.t2ok && temT2(S.cargo));
+  $('turnos').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === tEf(S.cargo)));
 }
 /* painel do estado para deputados: ranking, busca de candidato e votação por cidade com 2022 */
 async function painelDep(vivo) {
@@ -1224,6 +1278,10 @@ async function ir() {
   mostraAba();
   if (S.aba !== 'mapa') { (ABAS[S.aba] || (() => {}))(); return; }
   const novo = await desenhar();
+  if (S.uf && tEf(S.cargo) === '2' && S.mapa2?.uf !== S.uf) {
+    S.mapa2 = null; const uf = S.uf;
+    getJSON(SIMT2 ? `mapa/${uf}.json` : `mapa/${uf}-t2.json`, 2 * 60000).then(d => { if (S.uf === uf) { S.mapa2 = { ...d, uf }; colorir(); if (nivel() === 'uf') painel(); } }).catch(() => {});
+  }
   if (S.uf && S.mapa?.uf !== S.uf) {
     S.mapa = null;
     getJSON(`mapa/${S.uf}.json`, 5 * 60000).then(d => { S.mapa = d; colorir(); if (nivel() === 'uf') painel(); }).catch(() => {});
@@ -1243,6 +1301,7 @@ setInterval(() => {
   S.ufRes = {}; nacional(); colorir(); if (nivel() !== 'zona') painel();
 }, 60000);
 nacional();
+detectaT2();
 const ABAS = {};
 function mostraAba() {
   const m = S.aba === 'mapa';
