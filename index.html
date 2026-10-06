@@ -201,7 +201,7 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
 <body>
 <header class="top"><div class="wrap">
   <a class="logo" href="#/"><i>✓</i>Apuração 2026</a>
-  <nav id="abas"><a href="#/" data-aba="mapa">Mapa</a><a href="#/congresso" data-aba="congresso">Congresso</a><a href="#/partidos" data-aba="partidos">Partidos</a><a href="#/historico" data-aba="historico">Histórico</a><a href="painel.html">Painel</a></nav>
+  <nav id="abas"><a href="#/" data-aba="mapa">Mapa</a><a href="#/congresso" data-aba="congresso">Congresso</a><a href="#/partidos" data-aba="partidos">Partidos</a><a href="#/comparar" data-aba="comparar">Comparar</a><a href="#/historico" data-aba="historico">Histórico</a><a href="painel.html">Painel</a></nav>
   <div class="contador" id="contador" hidden></div>
 </div></header>
 
@@ -215,6 +215,7 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
     <span class="chip">Comparação com <b>2014 · 2018 · 2022</b></span>
     <a class="chip" href="#/congresso"><b>Congresso</b> eleito</a>
     <a class="chip" href="#/partidos">Esquerda · centro · direita</a>
+    <a class="chip" href="#/comparar"><b>Comparar</b> eleições</a>
   </div>
   <div class="nacional" id="nacional"></div>
   <div class="prog-line" id="nacProg"></div>
@@ -245,6 +246,8 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
   <section class="aba" id="abaCongresso" hidden></section>
   <section class="aba" id="abaPartidos" hidden></section>
   <section class="aba" id="abaHistorico" hidden></section>
+  <section class="aba" id="abaComparar" hidden></section>
+  <section class="aba" id="abaComparar" hidden></section>
   <div class="anuncio" id="anuncio2"></div>
   <section class="features">
     <div class="card feat"><b>Mapa que desce até a urna</b><p>Região, estado, cidade, zona e seção. Escolha um candidato e veja onde ele foi forte, até a urna.</p></div>
@@ -260,7 +263,7 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
 </div></footer>
 <div class="tip" id="tip"></div>
 
-<script src="js/espectro.js?v=20261006c"></script>
+<script src="js/espectro.js?v=20261006d"></script>
 <script>
 'use strict';
 /* ---------------- constantes ---------------- */
@@ -432,7 +435,7 @@ function lerHash() {
   const p = cam.split('/').filter(Boolean);
   const c = new URLSearchParams(q || '').get('c');
   Object.assign(S, { reg: '', uf: '', mun: '', zona: '', sec: '' });
-  S.aba = ['congresso', 'partidos', 'historico'].includes(p[0]) ? p[0] : 'mapa';
+  S.aba = ['congresso', 'partidos', 'historico', 'comparar'].includes(p[0]) ? p[0] : 'mapa';
   S.q = new URLSearchParams(q || '');
   if (S.aba !== 'mapa') return;
   if (p[0] && REG[p[0].toUpperCase()]) S.reg = p[0].toUpperCase();
@@ -1306,15 +1309,16 @@ const ABAS = {};
 function mostraAba() {
   const m = S.aba === 'mapa';
   document.querySelector('.hero').hidden = !m; $('explorar').hidden = !m; document.querySelector('.features').hidden = !m;
-  for (const a of ['Congresso', 'Partidos', 'Historico']) $('aba' + a).hidden = S.aba !== a.toLowerCase();
+  for (const a of ['Congresso', 'Partidos', 'Historico', 'Comparar']) $('aba' + a).hidden = S.aba !== a.toLowerCase();
   document.querySelectorAll('#abas a[data-aba]').forEach(x => x.classList.toggle('on', x.dataset.aba === S.aba));
 }
 addEventListener('DOMContentLoaded', ir);
 </script>
-<script src="js/congresso.js?v=20261006c"></script>
-<script src="js/partidos.js?v=20261006c"></script>
-<script src="js/historico.js?v=20261006c"></script>
-<script src="js/contador.js?v=20261006c"></script>
-<script src="js/anuncios.js?v=20261006c"></script>
+<script src="js/congresso.js?v=20261006d"></script>
+<script src="js/partidos.js?v=20261006d"></script>
+<script src="js/historico.js?v=20261006d"></script>
+<script src="js/comparar.js?v=20261006d"></script>
+<script src="js/contador.js?v=20261006d"></script>
+<script src="js/anuncios.js?v=20261006d"></script>
 </body>
 </html>
