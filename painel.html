@@ -3,37 +3,39 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Apuração Eleições 2026</title>
+<title>Painel · Radar da Eleição</title>
+<link rel="icon" href="marca/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="marca/apple-touch-icon.png">
 <style>
 /* tema azul-escuro (único) */
 :root {
-  color-scheme: dark;
-  --page: #071327;
-  --surface: #0d1f3c;
-  --surface-2: #15294d;
-  --ink: #f3f7ff;
-  --ink-2: #b9c8e3;
-  --muted: #7f93b8;
-  --grid: #1c3260;
-  --axis: #2a4579;
-  --border: rgba(160,190,255,0.12);
-  --accent: #4d9bff;
-  --accent-2: #2563c4;
-  --good: #22c55e;
-  --good-text: #4ade80;
-  --warning: #fab219;
-  --critical: #f87171;
+  color-scheme: light;
+  --page: #F3F6F9;
+  --surface: #FFFFFF;
+  --surface-2: #EEF2F6;
+  --ink: #12243A;
+  --ink-2: #33475E;
+  --muted: #526277;
+  --grid: #E6ECF2;
+  --axis: #C9D5E0;
+  --border: #DCE4EC;
+  --accent: #006C61;
+  --accent-2: #12243A;
+  --good: #00A896;
+  --good-text: #006C61;
+  --warning: #8A5200;
+  --critical: #B42318;
 }
 * { box-sizing: border-box; }
 body {
   margin: 0; background: var(--page); color: var(--ink);
-  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 15px/1.5 Arial, Helvetica, sans-serif;
 }
 body::before { content: ""; position: fixed; inset: 0 0 auto 0; height: 220px; z-index: -1;
-  background: linear-gradient(180deg, #0f2a57 0%, var(--page) 100%); }
+  background: none; }
 .seg button.on, .seats { color: #fff; }
 /* cores fixas dos 3 primeiros candidatos a presidente (paleta categórica, ordem fixa) + "outros" */
-:root { --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c-outros: #3a5585; }
+:root { --c1: #12243A; --c2: #00A896; --c3: #7A8CA3; --c-outros: #C9D5E0; }
 .stack { display: flex; height: 10px; border-radius: 0 4px 4px 0; overflow: hidden; gap: 2px; background: var(--grid); min-width: 90px; }
 .stack > i { display: block; height: 100%; }
 .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
@@ -57,7 +59,7 @@ select, input[type=search], input[type=text] {
 }
 .seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 7px; overflow: hidden; }
 .seg button { font: inherit; border: 0; background: transparent; color: var(--ink-2); padding: 7px 12px; cursor: pointer; }
-.seg button.on { background: var(--accent); color: #fff; }
+.seg button.on { background: #12243A; color: #fff; }
 .tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid var(--axis); }
 .tabs button { font: inherit; border: 0; background: none; color: var(--ink-2); padding: 8px 14px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .tabs button.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
@@ -130,7 +132,7 @@ tr.click:hover td { background: var(--surface-2); }
 <div class="wrap">
   <header>
     <div>
-      <h1><a href="./" style="color:var(--accent);text-decoration:none;font-weight:500;font-size:14px;margin-right:8px">← Mapa</a>Apuração · Eleições 2026</h1>
+      <h1 style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><a href="./" style="line-height:0"><img src="marca/logo-480.png" width="200" alt="Radar da Eleição"></a><span>Painel da apuração · Eleições 2026</span></h1>
       <div class="sub">1º turno · 04/10/2026 · dados públicos do TSE</div>
     </div>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">

@@ -1,6 +1,6 @@
-# Apuração 2026 · do Brasil à urna
+# Radar da Eleição · A eleição, em dados.
 
-Site estático com os resultados das Eleições 2026 (TSE), do país até a seção eleitoral.
+Plataforma de acompanhamento e análise eleitoral: resultados das Eleições 2026 (TSE), do país até a seção eleitoral, com comparação entre eleições de 2014 a 2026.
 
 - **Mapa** (`index.html`): região → estado → cidade → zona → seção, para presidente, governador, senador e deputados.
   Escolha um candidato e veja os votos por cidade, zona e seção, com comparação com 2022, 2018 ou 2014.

@@ -3,228 +3,35 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Apuração 2026 · do Brasil à urna</title>
-<meta name="description" content="Resultados das Eleições 2026 em tempo real: país, região, estado, cidade, zona eleitoral e seção, com comparação com 2014, 2018 e 2022, Congresso eleito e partidos por esquerda, centro e direita.">
-<meta property="og:title" content="Apuração 2026 · do Brasil à urna">
-<meta property="og:description" content="Mapa interativo das Eleições 2026: votos por cidade, zona e seção, comparação com eleições anteriores e o novo Congresso.">
+<title>Radar da Eleição · A eleição, em dados.</title>
+<meta name="description" content="Acompanhe resultados e explore os dados da eleição por cargo e território: do país à seção eleitoral, com comparação entre eleições de 2014 a 2026. Fonte: TSE.">
+<meta property="og:title" content="Radar da Eleição · A eleição, em dados.">
+<meta property="og:description" content="Acompanhe. Compare. Entenda. Resultados e dados da eleição por cargo e território, do país à seção eleitoral.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="pt_BR">
-<meta name="theme-color" content="#071327">
+<meta name="theme-color" content="#12243A">
+<meta property="og:site_name" content="Radar da Eleição">
+<meta property="og:image" content="https://vmontilha.github.io/apuracao-2026/marca/compartilhar.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="marca/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="marca/apple-touch-icon.png">
 <script>
   // links antigos (?uf=…, #presidente, #c=…) continuam abrindo o painel completo
   if (/[?&](uf|cargo|num|modo)=/.test(location.search) || /^#(presidente|c=)/.test(location.hash))
     location.replace('painel.html' + location.search + location.hash);
 </script>
-<style>
-:root {
-  color-scheme: dark;
-  --page: #071327; --surface: #0d1f3c; --surface-2: #15294d; --ink: #f3f7ff; --ink-2: #b9c8e3; --muted: #7f93b8;
-  --grid: #1c3260; --axis: #2a4579; --border: rgba(160,190,255,0.12); --accent: #4d9bff; --good: #22c55e;
-  --good-text: #4ade80; --warning: #fab219; --critical: #f87171; --land: #1a3263; --land-hover: #2a4a88;
-}
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-a { color: var(--accent); text-decoration: none; }
-button { font: inherit; color: inherit; }
-.wrap { max-width: 1320px; margin: 0 auto; padding: 0 16px; }
-
-/* topo */
-.top { position: sticky; top: 0; z-index: 20; background: rgba(7,19,39,.86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
-.top .wrap { display: flex; align-items: center; gap: 14px; height: 56px; }
-.logo { display: flex; align-items: center; gap: 9px; font-weight: 700; letter-spacing: -.01em; font-size: 16px; color: var(--ink); }
-.logo i { width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, #4d9bff, #22c55e); display: grid; place-items: center; font-style: normal; font-size: 14px; }
-.top nav { margin-left: auto; display: flex; gap: 6px; }
-.top nav a { padding: 7px 12px; border-radius: 7px; color: var(--ink-2); }
-.top nav a.on, .top nav a:hover { background: var(--surface-2); color: var(--ink); }
-
-/* hero */
-.hero { position: relative; overflow: hidden; padding: 12px 0 2px;
-  background: radial-gradient(900px 380px at 15% -10%, #173a78 0%, transparent 70%), radial-gradient(700px 300px at 95% 0%, #0f3b3a 0%, transparent 70%); }
-.hero h1 { font-size: clamp(19px, 2.2vw, 26px); line-height: 1.2; margin: 0; letter-spacing: -.02em; }
-.hero h1 small { display: block; font-size: 13px; font-weight: 400; color: var(--ink-2); letter-spacing: 0; margin-top: 2px; }
-.faixa { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 6px 20px; }
-.faixa .prog-line { margin: 0; }
-.hero h1 em { font-style: normal; background: linear-gradient(90deg, #6fb0ff, #4ade80); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.hero p.lead { color: var(--ink-2); font-size: clamp(15px, 1.6vw, 17px); max-width: 680px; margin: 0 0 20px; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
-.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; background: rgba(77,155,255,.09); border: 1px solid rgba(77,155,255,.22); color: var(--ink-2); font-size: 13px; }
-.chip b { color: var(--ink); font-weight: 600; }
-.nacional { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.panel .cand-tile { padding: 9px; gap: 9px; }
-.panel .cand-tile img, .panel .cand-tile .ph { width: 44px; height: 44px; }
-.panel .cand-tile .big { font-size: 19px; }
-.cand-tile { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; background: rgba(13,31,60,.82); border: 1px solid var(--border); }
-.cand-tile img, .cand-tile .ph { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; background: var(--surface-2); flex: none; border: 2px solid var(--c, var(--axis)); }
-.cand-tile .nm { font-weight: 650; }
-.cand-tile .pp { color: var(--muted); font-size: 12px; }
-.cand-tile .big { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
-.cand-tile .bar { height: 5px; border-radius: 3px; background: var(--grid); margin-top: 5px; overflow: hidden; }
-.cand-tile .bar i { display: block; height: 100%; background: var(--c); }
-.prog-line { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin: 14px 0 0; color: var(--ink-2); font-size: 13px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 6px; }
-.dot.on { background: var(--good); animation: pulse 1.6s infinite; }
-@keyframes pulse { 50% { opacity: .35; } }
-
-/* explorador */
-.explorer { scroll-margin-top: 56px; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(330px, 1fr); gap: 16px; padding: 18px 0 40px; align-items: start; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
-.mapcard { position: sticky; top: 68px; padding: 12px; }
-.bar-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
-.crumbs a { color: var(--ink-2); padding: 3px 6px; border-radius: 5px; }
-.crumbs a:hover { background: var(--surface-2); color: var(--ink); }
-.crumbs b { color: var(--ink); padding: 3px 6px; }
-.seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
-.seg button { border: 0; background: transparent; color: var(--ink-2); padding: 6px 11px; cursor: pointer; font-size: 13px; }
-.seg button.on { background: var(--accent); color: #fff; }
-.seg button[hidden], .seg[hidden] { display: none; }
-.mapbox { position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: calc(100vh - 150px); min-height: 300px; }
-#map { width: 100%; height: 100%; display: block; touch-action: manipulation; }
-#map path { stroke: #0a1830; stroke-width: .6; vector-effect: non-scaling-stroke; fill: var(--land); cursor: pointer; transition: fill .25s, opacity .25s; fill-rule: evenodd; }
-#map path:hover { stroke: #fff; stroke-width: 1.4; }
-#map path.sel { stroke: #fff; stroke-width: 2.2; }
-#map path.fora { opacity: .25; }
-#map text { font-size: var(--fs, 24px); fill: #fff; paint-order: stroke; stroke: rgba(7,19,39,.9); stroke-width: 4px; pointer-events: none; font-weight: 700; vector-effect: non-scaling-stroke; letter-spacing: .02em; }
-#map text.oculto { display: none; }
-.back { position: absolute; left: 8px; top: 8px; border: 1px solid var(--axis); background: rgba(13,31,60,.9); color: var(--ink); border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 13px; }
-.back[hidden] { display: none; }
-.tip { position: fixed; z-index: 30; pointer-events: none; background: #0b1a33; border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; box-shadow: 0 8px 24px rgba(0,0,0,.4); max-width: 260px; display: none; }
-.tip b { display: block; font-size: 13.5px; margin-bottom: 2px; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; font-size: 12px; color: var(--ink-2); min-height: 18px; }
-.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
-.loading { position: absolute; right: 10px; top: 10px; font-size: 12px; color: var(--muted); }
-
-/* painel */
-.panel { padding: 16px; min-height: 300px; }
-.panel h2 { font-size: 19px; margin: 0 0 2px; letter-spacing: -.01em; }
-.panel h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 20px 0 8px; font-weight: 600; }
-.sub { color: var(--ink-2); font-size: 13px; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 12px 0 4px; }
-.stat { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
-.stat span { display: block; color: var(--muted); font-size: 11.5px; }
-.stat b { font-size: 16px; }
-.res { display: flex; flex-direction: column; gap: 7px; }
-.r { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: baseline; }
-.r .n { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.r .n small { color: var(--muted); font-weight: 400; margin-left: 4px; }
-.r .v { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.r .v small { color: var(--muted); margin-left: 6px; }
-.r .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; }
-.r .bar i { display: block; height: 100%; border-radius: 3px; }
-.tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: 1px; letter-spacing: .02em; }
-.tag.el { background: rgba(34,197,94,.18); color: var(--good-text); }
-.tag.t2 { background: rgba(250,178,25,.16); color: var(--warning); }
-.list { display: flex; flex-direction: column; }
-.li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 8px; border-radius: 8px; cursor: pointer; border: 0; background: none; text-align: left; width: 100%; }
-.li:hover { background: var(--surface-2); }
-.li .t { font-weight: 600; }
-.li .m { color: var(--muted); font-size: 12px; }
-.li .x { text-align: right; font-size: 12.5px; color: var(--ink-2); white-space: nowrap; }
-.search { width: 100%; font: inherit; color: var(--ink); background: var(--page); border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; }
-.grid-sec { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 5px; }
-.grid-sec button { border: 1px solid var(--axis); background: var(--surface-2); border-radius: 6px; padding: 6px 0; cursor: pointer; font-size: 12.5px; font-variant-numeric: tabular-nums; position: relative; overflow: hidden; }
-.grid-sec button:hover { border-color: #fff; }
-.grid-sec button i { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; }
-.grid-sec button.err { opacity: .45; }
-.prog { height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; margin: 8px 0; }
-.prog i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
-.files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.files a { font-size: 12.5px; border: 1px solid var(--axis); border-radius: 6px; padding: 4px 9px; color: var(--ink-2); }
-.files a:hover { color: var(--ink); border-color: var(--accent); }
-.cta { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; padding: 9px 14px; border-radius: 9px; background: var(--accent); color: #fff; font-weight: 600; }
-.note { color: var(--muted); font-size: 12px; margin-top: 10px; }
-.empty { color: var(--muted); padding: 10px 0; }
-.regs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
-.reg { text-align: left; border: 1px solid var(--border); background: var(--surface-2); border-radius: 10px; padding: 10px; cursor: pointer; }
-.reg:hover { border-color: var(--accent); }
-.reg .t { font-weight: 650; margin-bottom: 6px; }
-
-/* rodapé / features */
-.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; padding: 8px 0 30px; }
-.feat { padding: 16px; }
-.feat b { display: block; margin-bottom: 4px; font-size: 15px; }
-.feat p { margin: 0; color: var(--ink-2); font-size: 13.5px; }
-footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12.5px; padding: 18px 0 30px; }
-
-@media (max-width: 900px) {
-  .explorer { grid-template-columns: 1fr; }
-  .mapcard { position: static; }
-  .mapbox { aspect-ratio: 1 / 1; max-height: 72vh; }
-  .explorer { padding-top: 8px; }
-  .top nav a { padding: 7px 8px; }
-}
-/* abas, contador e anúncios */
-.top nav { overflow-x: auto; scrollbar-width: none; }
-.top nav::-webkit-scrollbar { display: none; }
-.top nav a { white-space: nowrap; }
-.contador { display: flex; gap: 10px; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
-.contador[hidden] { display: none; }
-.contador b { color: var(--ink); font-variant-numeric: tabular-nums; }
-.contador .on { width: 7px; height: 7px; border-radius: 50%; background: var(--good); display: inline-block; margin-right: 4px; animation: pulse 1.6s infinite; }
-.aba { padding: 18px 0 40px; }
-.aba[hidden], .hero[hidden], .explorer[hidden], .features[hidden] { display: none; }
-.aba h2.tit { font-size: 24px; margin: 0 0 4px; letter-spacing: -.02em; }
-.filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
-.filtros select, .filtros input { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--axis); border-radius: 8px; padding: 7px 9px; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 14px; }
-.grid2 > .card { padding: 14px; min-width: 0; }
-.tab { width: 100%; border-collapse: collapse; font-size: 13px; }
-.tab th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--axis); position: sticky; top: 0; background: var(--surface); }
-.tab td { padding: 6px 8px; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
-.tab td.n, .tab th.n { text-align: right; white-space: nowrap; }
-.tab tr:hover td { background: var(--surface-2); }
-.rolagem { max-height: 520px; overflow: auto; }
-.lados { display: flex; height: 26px; border-radius: 6px; overflow: hidden; margin: 6px 0; }
-.lados i { display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 12px; font-weight: 700; color: #fff; min-width: 0; overflow: hidden; white-space: nowrap; }
-.up { color: var(--good-text); font-weight: 600; } .dn { color: var(--critical); font-weight: 600; }
-.anuncio:empty { display: none; }
-.anuncio { margin: 14px 0; text-align: center; }
-.hemi { width: 100%; height: auto; display: block; }
-.hemi circle { stroke: rgba(7,19,39,.6); stroke-width: .6; cursor: pointer; }
-.hemi circle:hover { stroke: #fff; stroke-width: 1.5; }
-.hemi circle.apaga { opacity: .15; }
-.ac { position: relative; }
-.ac-lista { position: absolute; z-index: 15; left: 0; right: 0; top: calc(100% - 6px); background: #0b1a33; border: 1px solid var(--axis); border-radius: 8px; max-height: 320px; overflow: auto; box-shadow: 0 10px 28px rgba(0,0,0,.45); }
-.ac-lista[hidden] { display: none; }
-.ac-lista button { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px; cursor: pointer; font-size: 13.5px; }
-.ac-lista button span { color: var(--muted); font-size: 12px; grid-column: 1; }
-.ac-lista button small { color: var(--ink-2); grid-column: 2; grid-row: 1 / span 2; align-self: center; }
-.ac-lista button.on, .ac-lista button:hover { background: var(--surface-2); }
-.ac-lista .vazio { padding: 10px; color: var(--muted); font-size: 13px; }
-.explorer > * { min-width: 0; }
-.seg { max-width: 100%; }
-.top nav { min-width: 0; }
-.logo { white-space: nowrap; }
-@media (max-width: 700px) {
-  .top .wrap { flex-wrap: wrap; height: auto; padding-top: 8px; padding-bottom: 6px; gap: 4px 10px; }
-  .top nav { order: 3; width: 100%; margin-left: 0; }
-  .contador { margin-left: auto; }
-  .explorer { scroll-margin-top: 92px; }
-  .hero { padding: 8px 0 0; }
-  .hero h1 small { display: none; }
-  .faixa .prog-line span:nth-child(n+3) { display: none; }
-  .hero p.lead { font-size: 14px; margin-bottom: 12px; }
-  .chips { margin-bottom: 14px; }
-  .nacional { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .cand-tile { padding: 8px; gap: 8px; }
-  .cand-tile img, .cand-tile .ph { width: 36px; height: 36px; }
-  .cand-tile .big { font-size: 17px; }
-  .cand-tile .pp { display: none; }
-  .cand-tile .nm { font-size: 13px; }
-}
-.sel-cand { width: 100%; font: inherit; color: var(--ink); background: var(--page); border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; margin: 4px 0 8px; }
-</style>
+<link rel="stylesheet" href="css/radar.css?v=20261007a">
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <a class="logo" href="#/"><i>✓</i>Apuração 2026</a>
+  <a class="logo" href="#/" aria-label="Radar da Eleição — página inicial"><picture><source srcset="marca/logo-480.webp 1x, marca/logo-960.webp 2x" type="image/webp"><img src="marca/logo-480.png" srcset="marca/logo-480.png 1x, marca/logo-960.png 2x" width="200" height="75" alt="Radar da Eleição"></picture></a>
   <nav id="abas"><a href="#/" data-aba="mapa">Mapa</a><a href="#/congresso" data-aba="congresso">Congresso</a><a href="#/partidos" data-aba="partidos">Partidos</a><a href="#/comparar" data-aba="comparar">Comparar</a><a href="#/historico" data-aba="historico">Histórico</a><a href="painel.html">Painel</a></nav>
   <div class="contador" id="contador" hidden></div>
 </div></header>
 
 <section class="hero"><div class="wrap faixa">
-  <h1>Do Brasil à urna, <em>em tempo real.</em> <small>Clique no mapa: região, estado, cidade, zona e seção.</small></h1>
+  <h1>A eleição, <em>em dados.</em> <small>Acompanhe resultados e explore os dados por cargo e território. Clique no mapa: região, estado, cidade, zona e seção.</small></h1>
   <div class="prog-line" id="nacProg"></div>
 </div></section>
 
@@ -264,12 +71,13 @@ footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 12
 </main>
 
 <footer><div class="wrap">
+  <div class="marca"><img src="marca/simbolo-branco.svg" alt=""><b>Radar da Eleição</b><span>A eleição, em dados.</span></div>
   Fonte: TSE (resultados.tse.jus.br e Dados Abertos) e IBGE (malhas municipais). Site independente, sem vínculo com a Justiça Eleitoral; os números oficiais são os do TSE.
   A classificação dos partidos em esquerda, centro e direita é editorial e simplificada. · <a href="privacidade.html">Privacidade</a>
 </div></footer>
 <div class="tip" id="tip"></div>
 
-<script src="js/espectro.js?v=20261006j"></script>
+<script src="js/espectro.js?v=20261007a"></script>
 <script>
 'use strict';
 /* ---------------- constantes ---------------- */
@@ -468,7 +276,7 @@ let vb = [0, 0, 1000, 1000], anim = 0;
 function zoom(alvo, rapido) {
   cancelAnimationFrame(anim);
   const fonte = () => svg.style.setProperty('--fs', (Math.max(vb[2], vb[3]) * (nivel() === 'reg' ? .034 : .03)).toFixed(1) + 'px');
-  if (rapido) { vb = alvo; svg.setAttribute('viewBox', vb.join(' ')); fonte(); return; }
+  if (rapido || matchMedia('(prefers-reduced-motion: reduce)').matches) { vb = alvo; svg.setAttribute('viewBox', vb.join(' ')); fonte(); return; }
   const de = vb.slice(), t0 = performance.now(), dur = 550;
   const passo = t => {
     const k = Math.min(1, (t - t0) / dur), e = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
@@ -1216,7 +1024,7 @@ async function nacional() {
       <div class="big">${pc(vv ? k.v / vv * 100 : 0, 2)}</div><div class="bar"><i style="width:${vv ? k.v / vv * 100 : 0}%"></i></div></div></div>`).join('');
     const p = num(r.s?.pstn);
     $('nacProg').innerHTML = `<span><span class="dot ${p < 100 ? 'on' : ''}"></span>${p < 100 ? 'Apuração do ' + (S.turno === '2' ? '2º' : '1º') + ' turno em andamento' : 'Apuração do ' + (S.turno === '2' ? '2º' : '1º') + ' turno concluída'}</span>
-      <span>Presidente · ${pc(p, 2)} das seções apuradas</span><span>Comparecimento ${fmt(r.e?.c)}</span><span>Atualizado ${esc(r.hg || r.ht || '')}</span>`;
+      <span>Presidente · ${pc(p, 2)} das seções totalizadas</span><span>Atualizado às ${esc(String(r.hg || r.ht || '').slice(0, 5).replace(':', 'h'))} (horário de Brasília)</span><span>Fonte: TSE</span>`;
     if (nivel() === 'br' && S.cargo === '1') painel();
   } catch (e) { $('nacProg').textContent = 'Não foi possível ler o TSE agora.'; }
 }
@@ -1337,11 +1145,11 @@ function mostraAba() {
 }
 addEventListener('DOMContentLoaded', ir);
 </script>
-<script src="js/congresso.js?v=20261006j"></script>
-<script src="js/partidos.js?v=20261006j"></script>
-<script src="js/historico.js?v=20261006j"></script>
-<script src="js/comparar.js?v=20261006j"></script>
-<script src="js/contador.js?v=20261006j"></script>
-<script src="js/anuncios.js?v=20261006j"></script>
+<script src="js/congresso.js?v=20261007a"></script>
+<script src="js/partidos.js?v=20261007a"></script>
+<script src="js/historico.js?v=20261007a"></script>
+<script src="js/comparar.js?v=20261007a"></script>
+<script src="js/contador.js?v=20261007a"></script>
+<script src="js/anuncios.js?v=20261007a"></script>
 </body>
 </html>
