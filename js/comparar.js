@@ -223,7 +223,7 @@ ABAS.comparar = async function () {
       alvo = `<div class="seg" style="margin:4px 0 8px">${ORDEM_LADO.map(l => `<a href="${set({ alvo: l })}" style="padding:6px 11px;color:${s.alvo === l ? '#fff' : 'var(--ink-2)'};background:${s.alvo === l ? LADO_COR[l] : 'transparent'}">${LADO_NM[l]}</a>`).join('')}</div>`;
     }
     return `<div class="card" style="padding:14px;border-top:3px solid ${lado_ === 'a' ? 'var(--serie-a)' : 'var(--serie-b)'}">
-      <div style="font-weight:700;margin-bottom:8px">${lado_ === 'a' ? 'Série A' : 'Série B'}</div>
+      <div style="font-weight:700;margin-bottom:8px">${{ cand: 'Candidato(a)', part: 'Partido', campo: 'Campo político' }[s.tipo] || 'Candidato(a)'} ${lado_.toUpperCase()}</div>
       <div class="filtros" style="margin:0 0 6px">
         <select data-lado="${lado_}" data-campo="ano">${Object.entries(CMP_ELEICOES).map(([a, e]) => `<option value="${a}" ${a === s.ano ? 'selected' : ''}>${a} · ${e.geral ? 'geral' : 'municipal'}</option>`).join('')}</select>
         <select data-lado="${lado_}" data-campo="cargo">${E.cargos.map(c => `<option value="${c}" ${c === s.cargo ? 'selected' : ''}>${CMP_CARGO[c]}</option>`).join('')}</select>
@@ -265,7 +265,7 @@ ABAS.comparar = async function () {
 
   const R = $('cmpRes');
   const pronta = s => s.tipo !== 'cand' || s.alvo;
-  if (!pronta(sa) || !pronta(sb)) { R.innerHTML = `<div class="card empty" style="padding:14px">Escolha o ${!pronta(sa) ? 'candidato da série A' : 'candidato da série B'} para ver a comparação.</div>`; return; }
+  if (!pronta(sa) || !pronta(sb)) { R.innerHTML = `<div class="card empty" style="padding:14px">Escolha o(a) ${!pronta(sa) ? 'candidato(a) A' : 'candidato(a) B'} para ver a comparação.</div>`; return; }
   R.innerHTML = `<div class="card" style="padding:14px"><div class="sub">Calculando…</div><div class="prog"><i id="cmpProg" style="width:5%"></i></div></div>`;
   const prog = (f, t) => { const el = $('cmpProg'); if (el) el.style.width = (f / t * 100).toFixed(0) + '%'; };
   const [ra, rb] = await Promise.all([valores(sa, escopo, prog), valores(sb, escopo, prog)]);
