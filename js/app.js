@@ -68,6 +68,8 @@ const cargoUF = (uf, c) => (uf === 'df' && c === '7') ? '8' : c;
 function urlRes(uf, mun, c, t) { c = cargoUF(uf, c); const e = eleDo(c, t); return `${T}/${e}/dados/${uf}/${uf}${mun || ''}-c${pad(c, 4)}-e${pad(e, 6)}-u.json`; }
 const urlBr = t => { const e = eleDo('1', t); return `${T}/${e}/dados/br/br-c0001-e${pad(e, 6)}-u.json`; };
 const urlFoto = (c, uf, sq) => `${T}/${eleDo(c)}/fotos/${c === '1' ? 'br' : uf}/${sq}.jpeg`;
+// foto pequena do candidato (some sem deixar buraco se o TSE não tiver a imagem)
+const avatar = (url, cls = 'av') => url ? `<img class="${cls}" src="${url}" alt="" loading="lazy" onerror="this.remove()">` : '';
 
 // candidatos de um arquivo de resultado do TSE
 function cands(r) {
@@ -194,7 +196,7 @@ const svg = $('map'), tip = $('tip');
 let vb = [0, 0, 1000, 1000], anim = 0;
 function zoom(alvo, rapido) {
   cancelAnimationFrame(anim);
-  const fonte = () => svg.style.setProperty('--fs', (Math.max(vb[2], vb[3]) * (nivel() === 'reg' ? .028 : .025)).toFixed(1) + 'px');
+  const fonte = () => svg.style.setProperty('--fs', (Math.max(vb[2], vb[3]) * (nivel() === 'reg' ? .024 : .021)).toFixed(1) + 'px');
   if (rapido || matchMedia('(prefers-reduced-motion: reduce)').matches) { vb = alvo; svg.setAttribute('viewBox', vb.join(' ')); fonte(); return; }
   const de = vb.slice(), t0 = performance.now(), dur = 550;
   const passo = t => {
@@ -342,7 +344,7 @@ function dep(uf, c) {
   c = cargoUF(uf, c);
   const key = uf + '-c' + c;
   if (!DEPS.has(key)) DEPS.set(key, getJSON(`mapa/${key}.json`, 5 * 60000).then(d => {
-    const cands = d.cands.map(([n, nm, sg, nmc], i) => ({ i, n, nm, sg, nmc, v: 0 }));
+    const cands = d.cands.map(([n, nm, sg, nmc, sq], i) => ({ i, n, nm, sg, nmc, sq, v: 0 }));
     const mu = {};
     let vv = 0, pstT = 0, pesoT = 0;
     for (const cd in d.mu) {
@@ -589,13 +591,13 @@ function linhas(lista, total, opt = {}) {
   if (!lista.length) return '<div class="empty">Sem votos apurados ainda.</div>';
   const max = lista[0].v || 1;
   return `<div class="res">${lista.map((k, i) => `
-    <div class="r"><div class="n">${opt.rank ? `<small style="margin:0 6px 0 0">${i + 1}º</small>` : ''}${esc(k.cru ? k.nm : cap(k.nm))}<small>${esc(k.sg || '')}${k.n && k.n.length > 2 ? ' · ' + k.n : ''}</small>${k.tag || ''}</div>
+    <div class="r"><div class="n">${avatar(k.foto)}${opt.rank ? `<small style="margin:0 6px 0 0">${i + 1}º</small>` : ''}${esc(k.cru ? k.nm : cap(k.nm))}<small>${esc(k.sg || '')}${k.n && k.n.length > 2 ? ' · ' + k.n : ''}</small>${k.tag || ''}</div>
     <div class="v">${pc(total ? k.v / total * 100 : 0)}<small>${fmt(k.v)}</small></div>
     <div class="bar"><i style="width:${(k.v / max * 100).toFixed(1)}%;background:${cor(k.n)}"></i></div></div>`).join('')}</div>`;
 }
 function resultadoTSE(r, c, lim = 8) {
   const vv = num(r.v?.vv), l = cands(r);
-  const top = l.slice(0, lim).map((k, i) => ({ ...k, tag: situacao(k, i, r, c) }));
+  const top = l.slice(0, lim).map((k, i) => ({ ...k, tag: situacao(k, i, r, c), foto: k.sq && urlFoto(c, S.uf || 'br', k.sq) }));
   return `
     <div class="stats">
       <div class="stat"><span>Seções apuradas</span><b>${pc(num(r.s?.pstn), 2)}</b></div>
@@ -684,7 +686,7 @@ async function painel() {
       const R = REG[S.reg], s = somaEstados(c, R.ufs);
       P.innerHTML = `<h2>Região ${R.nm}</h2><div class="sub">${R.ufs.length} estados · clique num estado para ver as cidades</div>
         ${c === '1' ? `<div class="stats"><div class="stat"><span>Seções apuradas</span><b>${pc(s.p, 2)}</b></div><div class="stat"><span>Votos válidos</span><b>${fmt(s.vv)}</b></div></div>
-        <h3>Presidente na região</h3>${linhas(s.l.slice(0, 6), s.vv)}` : ''}
+        <h3>Presidente na região</h3>${linhas(s.l.slice(0, 6).map(k => ({ ...k, foto: k.sq && urlFoto('1', 'br', k.sq) })), s.vv)}` : ''}
         <h3>Estados</h3>${listaEstados(R.ufs, c)}`;
     } else if (n === 'uf' && !MAJ(c)) {
       await painelDep(vivo);
@@ -973,7 +975,7 @@ async function painelDep(vivo) {
   const pstUF = (() => { let t = 0, w = 0; for (const cd in D.mu) { t += D.mu[cd].pst * D.mu[cd].vv; w += D.mu[cd].vv; } return w ? t / w : 0; })();
   const linhaCand = x => {
     const t22 = v22(x);
-    return `<button class="li" data-cand="${x.n}"><div><div class="t">${x.pos}º · ${esc(cap(x.nm))} <small style="color:var(--muted);font-weight:400">${esc(x.sg)} · ${x.n}</small></div>
+    return `<button class="li" data-cand="${x.n}"><div><div class="t">${avatar(x.sq && urlFoto(c, S.uf, x.sq))}${x.pos}º · ${esc(cap(x.nm))} <small style="color:var(--muted);font-weight:400">${esc(x.sg)} · ${x.n}</small></div>
       <div class="m">${t22 == null ? 'não concorreu em ' + S.anoCmp : `: ${fmt(t22)} ${delta(x.v, t22, pstUF)}`}</div></div>
       <div class="x"><b>${fmt(x.v)}</b><br>${pc(D.vv ? x.v / D.vv * 100 : 0, 2)}</div></button>`;
   };
@@ -986,7 +988,7 @@ async function painelDep(vivo) {
     const cid = Object.entries(D.mu).map(([cd, m]) => ({ cd, m, v: votosEm(m, k.i), v22: H2 ? (H2.mun[cd] || 0) : null }))
       .filter(x => x.v || x.v22).sort((a, b) => b.v - a.v);
     const nome = cd => cap(S.geo.mu.find(x => x.t === cd)?.n || cd);
-    h = `<h2>${esc(cap(k.nm))} <small class="sub">${esc(k.sg)} · ${k.n} · ${CARGO_NM[c]}</small></h2>
+    h = `<h2 class="com-foto">${avatar(k.sq && urlFoto(c, S.uf, k.sq), 'av grande')}<span>${esc(cap(k.nm))} <small class="sub">${esc(k.sg)} · ${k.n} · ${CARGO_NM[c]}</small></span></h2>
       <div class="sub">${UF_NM[S.uf]} · <a href="${hashDe({ cand: '' })}">trocar candidato</a></div>
       <div class="stats">
         <div class="stat"><span>Votos</span><b>${fmt(k.v)}</b></div>

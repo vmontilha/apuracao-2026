@@ -96,6 +96,9 @@ button { font: inherit; color: inherit; }
 .res { display: flex; flex-direction: column; gap: 8px; }
 .r { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; font-size: 15px; }
 .r .n { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+img.av { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; vertical-align: middle; margin-right: 8px; background: var(--surface-2); border: 1px solid var(--border); }
+img.av.grande { width: 56px; height: 56px; margin-right: 12px; flex: none; }
+h2.com-foto { display: flex; align-items: center; }
 .r .n small { color: var(--muted); font-weight: 400; margin-left: 6px; font-size: 13px; }
 .r .v { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 700; }
 .r .v small { color: var(--muted); margin-left: 8px; font-weight: 400; font-size: 13px; }

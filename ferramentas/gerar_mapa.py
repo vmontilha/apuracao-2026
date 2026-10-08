@@ -72,7 +72,7 @@ def um_estado(uf, cm, nome=None):
 
 def deputados(uf, cm, c):
     """site/mapa/<uf>-c<cargo>.json: votos de todos os deputados em cada município.
-    cands = [[número, nome de urna, partido, nome completo]]; mu[cidade] = [pst%, válidos, i1, v1, i2, v2, ...]
+    cands = [[número, nome de urna, partido, nome completo, sequencial (foto)]]; mu[cidade] = [pst%, válidos, i1, v1, i2, v2, ...]
     (i = posição em cands, só quem teve voto na cidade, em ordem decrescente)."""
     mus = [m['cd'] for m in cm]
     idx, cands, out = {}, [], {}
@@ -92,7 +92,7 @@ def deputados(uf, cm, c):
                         n = str(k['n'])
                         if n not in idx:
                             idx[n] = len(cands)
-                            cands.append([n, k.get('nmu') or k.get('nm'), p.get('sg', ''), k.get('nm', '')])
+                            cands.append([n, k.get('nmu') or k.get('nm'), p.get('sg', ''), k.get('nm', ''), str(k.get('sqcand', ''))])
                         if v:
                             lst.append((idx[n], v))
             lst.sort(key=lambda x: -x[1])
