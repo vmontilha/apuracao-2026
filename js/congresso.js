@@ -53,8 +53,8 @@ function hemiciclo(membros, opt = {}) {
     const m = ord[i]; if (!m) return;
     h += `<circle cx="${(cx + p.x * R).toFixed(1)}" cy="${(cy + p.y * R).toFixed(1)}" r="${(rr * R).toFixed(1)}" fill="${m.cor}" ${m.apagado ? 'fill-opacity=".45"' : ''} data-i="${i}" data-sg="${esc(m.sg)}"/>`;
   });
-  h += `<text x="${cx}" y="${cy - 40}" text-anchor="middle" fill="#12243A" font-size="64" font-weight="700">${fmt(membros.length)}</text>`;
-  h += `<text x="${cx}" y="${cy}" text-anchor="middle" fill="#526277" font-size="22">${esc(opt.legenda || 'cadeiras')}${k > 1 ? ` · cada ponto ≈ ${k}` : ''}</text></svg>`;
+  h += `<text x="${cx}" y="${cy - 40}" text-anchor="middle" style="fill:var(--ink)" font-size="64" font-weight="700">${fmt(membros.length)}</text>`;
+  h += `<text x="${cx}" y="${cy}" text-anchor="middle" style="fill:var(--muted)" font-size="22">${esc(opt.legenda || 'cadeiras')}${k > 1 ? ` · cada ponto ≈ ${k}` : ''}</text></svg>`;
   return { html: h, ord, k };
 }
 function barraLados(cont, total, ant) {
@@ -81,6 +81,8 @@ ABAS.congresso = async function () {
   const casa = S.q.get('casa') === 'senado' ? 'senado' : 'camara';
   const uf = S.q.get('uf') || '', mun = S.q.get('mun') || '';
   const link = o => '#/congresso?' + new URLSearchParams(Object.fromEntries(Object.entries({ esfera, casa, uf, mun, ...o }).filter(([, v]) => v))).toString();
+  // o Distrito Federal não tem eleições municipais (não há prefeito nem vereadores)
+  if (esfera === 'municipal' && uf === 'df') { location.replace(link({ uf: '', mun: '' })); return; }
   A.innerHTML = `<h2 class="tit">Composição eleita</h2><div class="sub">carregando…</div>`;
   const todas = Object.keys(UF_NM);
   const ufs = uf ? [uf] : todas;
@@ -138,7 +140,7 @@ ABAS.congresso = async function () {
   const cl = contaLados(membros), ca = contaLados(anteriores);
   const cp = contaPart(membros), cpa = contaPart(anteriores);
   const partes = [...new Set([...cp.keys(), ...cpa.keys()])].map(p => ({ p, n: cp.get(p) || 0, a: cpa.get(p) || 0 })).sort((x, y) => y.n - x.n || y.a - x.a);
-  const seg = (lista, atual_, campo) => `<div class="seg">${lista.map(([k, t]) => `<a href="${link({ [campo]: k, ...(campo === 'esfera' ? { mun: '' } : {}) })}" style="padding:7px 13px;display:inline-block;color:${atual_ === k ? '#fff' : 'var(--ink-2)'};background:${atual_ === k ? 'var(--navy)' : 'transparent'}">${t}</a>`).join('')}</div>`;
+  const seg = (lista, atual_, campo) => `<div class="seg">${lista.map(([k, t]) => `<a href="${link({ [campo]: k, ...(campo === 'esfera' ? { mun: '' } : {}) })}" style="padding:7px 13px;display:inline-block;color:${atual_ === k ? 'var(--sobre-navy)' : 'var(--ink-2)'};background:${atual_ === k ? 'var(--navy)' : 'transparent'}">${t}</a>`).join('')}</div>`;
   const cidades = esfera === 'municipal' && uf ? await getJSON(`geo/${uf}.json`, Infinity).then(g => [...g.mu].sort((a, b) => a.n.localeCompare(b.n))).catch(() => []) : [];
   const anoAnt = esfera === 'municipal' ? '2020' : '2022';
   A.innerHTML = `
@@ -147,7 +149,7 @@ ABAS.congresso = async function () {
     <div class="filtros">
       ${seg([['federal', 'Federal'], ['estadual', 'Estadual'], ['municipal', 'Municipal']], esfera, 'esfera')}
       ${esfera === 'federal' ? seg([['camara', 'Câmara'], ['senado', 'Senado']], casa, 'casa') : ''}
-      <select id="cgUf"><option value="">Brasil (todos os estados)</option>${todas.map(u => `<option value="${u}" ${u === uf ? 'selected' : ''}>${UF_NM[u]}</option>`).join('')}</select>
+      <select id="cgUf"><option value="">Brasil (todos os estados)</option>${todas.filter(u => esfera !== 'municipal' || u !== 'df').map(u => `<option value="${u}" ${u === uf ? 'selected' : ''}>${UF_NM[u]}</option>`).join('')}</select>
       ${esfera === 'municipal' && uf ? `<select id="cgMun"><option value="">Todas as cidades (prefeitos)</option>${cidades.map(m => `<option value="${m.t}" ${m.t === mun ? 'selected' : ''}>${esc(cap(m.n))}</option>`).join('')}</select>` : ''}
     </div>
     ${esfera === 'municipal' && !uf ? '<div class="note" style="margin:-4px 0 10px">Escolha um estado para ver as cidades e as Câmaras de Vereadores.</div>' : ''}

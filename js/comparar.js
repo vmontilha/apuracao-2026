@@ -222,14 +222,14 @@ ABAS.comparar = async function () {
     } else {
       alvo = `<div class="seg" style="margin:4px 0 8px">${ORDEM_LADO.map(l => `<a href="${set({ alvo: l })}" style="padding:6px 11px;color:${s.alvo === l ? '#fff' : 'var(--ink-2)'};background:${s.alvo === l ? LADO_COR[l] : 'transparent'}">${LADO_NM[l]}</a>`).join('')}</div>`;
     }
-    return `<div class="card" style="padding:14px;border-top:3px solid ${lado_ === 'a' ? '#12243A' : '#00A896'}">
+    return `<div class="card" style="padding:14px;border-top:3px solid ${lado_ === 'a' ? 'var(--serie-a)' : 'var(--serie-b)'}">
       <div style="font-weight:700;margin-bottom:8px">${lado_ === 'a' ? 'Série A' : 'Série B'}</div>
       <div class="filtros" style="margin:0 0 6px">
         <select data-lado="${lado_}" data-campo="ano">${Object.entries(CMP_ELEICOES).map(([a, e]) => `<option value="${a}" ${a === s.ano ? 'selected' : ''}>${a} · ${e.geral ? 'geral' : 'municipal'}</option>`).join('')}</select>
         <select data-lado="${lado_}" data-campo="cargo">${E.cargos.map(c => `<option value="${c}" ${c === s.cargo ? 'selected' : ''}>${CMP_CARGO[c]}</option>`).join('')}</select>
         ${turnos.length > 1 ? `<select data-lado="${lado_}" data-campo="turno">${turnos.map(t => `<option value="${t}" ${t === s.turno ? 'selected' : ''}>${t}º turno</option>`).join('')}</select>` : ''}
       </div>
-      <div class="seg" style="margin-bottom:6px">${Object.entries(CMP_TIPO).map(([k, v]) => `<a href="${set({ tipo: k, alvo: '' })}" style="padding:6px 11px;color:${s.tipo === k ? '#fff' : 'var(--ink-2)'};background:${s.tipo === k ? 'var(--navy)' : 'transparent'}">${v}</a>`).join('')}</div>
+      <div class="seg" style="margin-bottom:6px">${Object.entries(CMP_TIPO).map(([k, v]) => `<a href="${set({ tipo: k, alvo: '' })}" style="padding:6px 11px;color:${s.tipo === k ? 'var(--sobre-navy)' : 'var(--ink-2)'};background:${s.tipo === k ? 'var(--navy)' : 'transparent'}">${v}</a>`).join('')}</div>
       ${alvo}</div>`;
   };
   const esc_ = esc;
@@ -306,7 +306,7 @@ function desenhaResultado(R, notas) {
   const VA = sum('a', 'v'), TA = sum('a', 't'), VB = sum('b', 'v'), TB = sum('b', 't');
   const r = pearson(linhas);
   const forca = r == null ? '' : Math.abs(r) > .7 ? 'forte' : Math.abs(r) > .4 ? 'moderada' : 'fraca';
-  const corA = '#12243A', corB = '#00A896';
+  const corA = 'var(--serie-a)', corB = 'var(--serie-b)';
   R.innerHTML = `
     ${notas.map(n => `<div class="note" style="margin-bottom:8px">⚠️ ${esc(n)}</div>`).join('')}
     <div class="stats" style="margin-top:0">
@@ -369,13 +369,13 @@ function dispersao(linhas, corA, corB) {
   const tt = Math.max(1, ...p.map(x => x.a.t + x.b.t));
   const ticks = [0, .25, .5, .75, 1].map(f => f * max);
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:560px;height:auto;display:block;margin:0 auto">
-    ${ticks.map(t => `<line x1="${X(t)}" y1="${Y(0)}" x2="${X(t)}" y2="${Y(max)}" stroke="var(--grid)"/><line x1="${X(0)}" y1="${Y(t)}" x2="${X(max)}" y2="${Y(t)}" stroke="var(--grid)"/>
-      <text x="${X(t)}" y="${H - m + 14}" font-size="10" fill="var(--muted)" text-anchor="middle">${(t * 100).toFixed(t * 100 < 10 ? 1 : 0)}%</text>
-      <text x="${m - 4}" y="${Y(t) + 3}" font-size="10" fill="var(--muted)" text-anchor="end">${(t * 100).toFixed(t * 100 < 10 ? 1 : 0)}%</text>`).join('')}
-    <line x1="${X(0)}" y1="${Y(0)}" x2="${X(max)}" y2="${Y(max)}" stroke="var(--muted)" stroke-dasharray="4 4"/>
-    ${p.map(x => `<circle cx="${X(x.pa).toFixed(1)}" cy="${Y(x.pb).toFixed(1)}" r="${(2.5 + 9 * Math.sqrt((x.a.t + x.b.t) / tt)).toFixed(1)}" fill="${x.dif >= 0 ? corB : corA}" fill-opacity=".6" stroke="#fff" stroke-opacity=".9"><title>${esc(x.nome)} · A ${pc(x.pa * 100, 2)} · B ${pc(x.pb * 100, 2)}</title></circle>`).join('')}
-    <text x="${(W + m) / 2}" y="${H - 6}" font-size="11" fill="${corA}" text-anchor="middle">% de A</text>
-    <text x="12" y="${(H - m) / 2}" font-size="11" fill="${corB}" text-anchor="middle" transform="rotate(-90 12 ${(H - m) / 2})">% de B</text></svg>`;
+    ${ticks.map(t => `<line x1="${X(t)}" y1="${Y(0)}" x2="${X(t)}" y2="${Y(max)}" style="stroke:var(--grid)"/><line x1="${X(0)}" y1="${Y(t)}" x2="${X(max)}" y2="${Y(t)}" style="stroke:var(--grid)"/>
+      <text x="${X(t)}" y="${H - m + 14}" font-size="10" style="fill:var(--muted)" text-anchor="middle">${(t * 100).toFixed(t * 100 < 10 ? 1 : 0)}%</text>
+      <text x="${m - 4}" y="${Y(t) + 3}" font-size="10" style="fill:var(--muted)" text-anchor="end">${(t * 100).toFixed(t * 100 < 10 ? 1 : 0)}%</text>`).join('')}
+    <line x1="${X(0)}" y1="${Y(0)}" x2="${X(max)}" y2="${Y(max)}" style="stroke:var(--muted)" stroke-dasharray="4 4"/>
+    ${p.map(x => `<circle cx="${X(x.pa).toFixed(1)}" cy="${Y(x.pb).toFixed(1)}" r="${(2.5 + 9 * Math.sqrt((x.a.t + x.b.t) / tt)).toFixed(1)}" style="fill:${x.dif >= 0 ? corB : corA};stroke:var(--surface)" fill-opacity=".6" stroke-opacity=".9"><title>${esc(x.nome)} · A ${pc(x.pa * 100, 2)} · B ${pc(x.pb * 100, 2)}</title></circle>`).join('')}
+    <text x="${(W + m) / 2}" y="${H - 6}" font-size="11" style="fill:${corA}" text-anchor="middle">% de A</text>
+    <text x="12" y="${(H - m) / 2}" font-size="11" style="fill:${corB}" text-anchor="middle" transform="rotate(-90 12 ${(H - m) / 2})">% de B</text></svg>`;
 }
 async function mapaCmp(uf) {
   const svgM = $('cmpMapa'); if (!svgM) return;
@@ -387,15 +387,15 @@ async function mapaCmp(uf) {
   const corDe = l => {
     const v = l && (modo === 'dif' ? l.dif : modo === 'a' ? l.pa : l.pb);
     if (v == null) return 'var(--land)';
-    if (modo === 'dif') return `color-mix(in srgb, ${v >= 0 ? '#00A896' : '#12243A'} ${Math.round(12 + 88 * Math.abs(v) / maxAbs)}%, #FFFFFF)`;
-    return `color-mix(in srgb, ${modo === 'a' ? '#12243A' : '#00A896'} ${Math.round(8 + 92 * Math.sqrt(v / maxAbs))}%, #FFFFFF)`;
+    if (modo === 'dif') return `color-mix(in srgb, ${v >= 0 ? 'var(--serie-b)' : 'var(--serie-a)'} ${Math.round(12 + 88 * Math.abs(v) / maxAbs)}%, var(--surface))`;
+    return `color-mix(in srgb, ${modo === 'a' ? 'var(--serie-a)' : 'var(--serie-b)'} ${Math.round(8 + 92 * Math.sqrt(v / maxAbs))}%, var(--surface))`;
   };
   svgM.setAttribute('viewBox', `0 0 ${g.w} ${g.h}`);
-  svgM.innerHTML = g.mu.map(m => { const l = por.get(m.t); return `<path d="${m.d}" fill="${corDe(l)}" stroke="#FFFFFF" stroke-width=".8" vector-effect="non-scaling-stroke" fill-rule="evenodd" data-t="${m.t}" style="cursor:pointer"><title>${esc(cap(m.n))}${l ? ` · A ${l.pa == null ? '—' : pc(l.pa * 100, 2)} · B ${l.pb == null ? '—' : pc(l.pb * 100, 2)}` : ''}</title></path>`; }).join('');
+  svgM.innerHTML = g.mu.map(m => { const l = por.get(m.t); return `<path d="${m.d}" style="fill:${corDe(l)};stroke:var(--surface);cursor:pointer" stroke-width=".8" vector-effect="non-scaling-stroke" fill-rule="evenodd" data-t="${m.t}"><title>${esc(cap(m.n))}${l ? ` · A ${l.pa == null ? '—' : pc(l.pa * 100, 2)} · B ${l.pb == null ? '—' : pc(l.pb * 100, 2)}` : ''}</title></path>`; }).join('');
   svgM.onclick = e => { const p = e.target.closest('path[data-t]'); if (!p) return; const q = new URLSearchParams(location.hash.split('?')[1] || ''); q.set('mun', p.dataset.t); location.hash = '#/comparar?' + q.toString(); };
   $('cmpLeg').innerHTML = modo === 'dif'
-    ? `<span><i class="sw" style="background:#12243A"></i>A proporcionalmente melhor</span><span><i class="sw" style="background:#00A896"></i>B proporcionalmente melhor</span><span style="margin-left:auto;color:var(--muted)">até ${pc(maxAbs * 100, 1).replace('%', '')} p.p.</span>`
-    : `<span><i class="sw" style="background:${modo === 'a' ? '#12243A' : '#00A896'}"></i>mais forte = maior % (até ${pc(maxAbs * 100, 1)})</span>`;
+    ? `<span><i class="sw" style="background:var(--serie-a)"></i>A proporcionalmente melhor</span><span><i class="sw" style="background:var(--serie-b)"></i>B proporcionalmente melhor</span><span style="margin-left:auto;color:var(--muted)">até ${pc(maxAbs * 100, 1).replace('%', '')} p.p.</span>`
+    : `<span><i class="sw" style="background:${modo === 'a' ? 'var(--serie-a)' : 'var(--serie-b)'}"></i>mais forte = maior % (até ${pc(maxAbs * 100, 1)})</span>`;
 }
 
 /* busca de candidato com sugestões enquanto digita (nome de urna, nome completo ou número) */

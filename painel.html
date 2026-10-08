@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Painel · Radar da Eleição</title>
+<script>try { var t = localStorage.getItem("radar-tema"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<style>
+:root[data-theme="dark"] { color-scheme: dark; --page: #0B1623; --surface: #12243A; --surface-2: #1A3150; --ink: #F3F6F9; --ink-2: #C9D3DF; --muted: #9AABC0;
+  --grid: #22395A; --axis: #34507A; --border: #253D5E; --accent: #3CCBB8; --accent-2: #8FB4E3; --good: #3CCBB8; --good-text: #3CCBB8; --warning: #F2B866; --critical: #FF8A7A;
+  --c1: #8FB4E3; --c2: #3CCBB8; --c3: #9AABC0; --c-outros: #34507A; }
+:root[data-theme="dark"] h1 a img { background: #F3F6F9; border-radius: 10px; padding: 4px 8px; }
+:root[data-theme="dark"] .seg button.on { background: #3CCBB8; color: #0B1623; }
+</style>
 <link rel="icon" href="marca/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="marca/apple-touch-icon.png">
 <style>
@@ -137,9 +145,8 @@ tr.click:hover td { background: var(--surface-2); }
     </div>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       <span class="live"><span class="dot" id="dot"></span><span id="status">carregando…</span></span>
-      <div class="seg" id="modeSeg">
+      <div class="seg" id="modeSeg" hidden>
         <button data-mode="live" class="on">Ao vivo (TSE)</button>
-        <button data-mode="sim">Simulação</button>
       </div>
     </div>
   </header>
@@ -316,6 +323,7 @@ const st = {
   muniSort: 'p', timer: null, loading: false,
 };
 try { Object.assign(st, JSON.parse(localStorage.getItem('apuracao-filtros') || '{}')); } catch (e) {}
+st.mode = 'live'; // a simulação foi retirada do site público
 function persist() {
   try { localStorage.setItem('apuracao-filtros', JSON.stringify({ cargo: st.cargo, regiao: st.regiao, uf: st.uf, mode: st.mode })); } catch (e) {}
 }
