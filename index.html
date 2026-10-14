@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Radar da Eleição · A eleição, em dados.</title>
-<meta name="description" content="Acompanhe resultados e explore os dados da eleição por cargo e território: do país à seção eleitoral, com comparação entre eleições de 2014 a 2026. Fonte: TSE.">
-<meta property="og:title" content="Radar da Eleição · A eleição, em dados.">
+<title>Resultado da eleição 2026: mapa por estado, cidade e seção | Radar da Eleição</title>
+<meta name="description" content="Resultado das eleições 2026 em mapa interativo: presidente, governador, senador e deputados por estado, cidade, zona e seção eleitoral, com comparação com 2022, 2018 e 2014. Dados oficiais do TSE.">
+<meta property="og:title" content="Radar da Eleição · Resultado da eleição 2026, em dados.">
 <meta property="og:description" content="Acompanhe. Compare. Entenda. Resultados e dados da eleição por cargo e território, do país à seção eleitoral.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="pt_BR">
@@ -15,6 +15,7 @@
 <link rel="canonical" href="https://radardaeleicao.com.br/">
 <meta property="og:image" content="https://radardaeleicao.com.br/marca/compartilhar.png">
 <meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">[{"@context": "https://schema.org", "@type": "WebSite", "name": "Radar da Eleição", "alternateName": "Radar da Eleição 2026", "url": "https://radardaeleicao.com.br/", "inLanguage": "pt-BR", "description": "Resultado das eleições 2026 em mapa interativo: presidente, governador, senador e deputados por estado, cidade, zona e seção eleitoral, com comparação com 2022, 2018 e 2014. Dados oficiais do TSE."}, {"@context": "https://schema.org", "@type": "Organization", "name": "Radar da Eleição", "url": "https://radardaeleicao.com.br/", "logo": "https://radardaeleicao.com.br/marca/logo-960.png", "sameAs": ["https://radardaeleicao.com"]}]</script>
 <link rel="icon" href="marca/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="marca/apple-touch-icon.png">
@@ -23,7 +24,7 @@
   if (/[?&](uf|cargo|num|modo)=/.test(location.search) || /^#(presidente|c=)/.test(location.hash))
     location.replace('painel.html' + location.search + location.hash);
 </script>
-<link rel="stylesheet" href="css/radar.css?v=20261008c">
+<link rel="stylesheet" href="css/radar.css?v=20261014a">
 <link rel="preload" href="geo/br.json" as="fetch" crossorigin>
 <script>try { var t = localStorage.getItem("radar-tema"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
@@ -41,6 +42,7 @@
     <a href="#/partidos" data-aba="partidos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg><span>Partidos</span></a>
     <a href="#/comparar" data-aba="comparar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M7 4 3 8m4-4 4 4m6 12V4m0 16-4-4m4 4 4-4"/></svg><span>Comparar</span></a>
     <a href="#/historico" data-aba="historico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5m4-2v5l3 2"/></svg><span>Histórico</span></a>
+    <a href="resultados/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg><span>Resultados por estado</span></a>
     <a href="painel.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zm9 0h7v4h-7zm0 6h7v10h-7zM4 13h7v7H4z"/></svg><span>Painel da apuração</span></a>
   </nav>
   <div class="lateral-pe">
@@ -53,7 +55,7 @@
 <div class="conteudo">
 
 <section class="hero"><div class="wrap faixa">
-  <h1>A eleição, <em>em dados.</em> <small>Acompanhe resultados e explore os dados por cargo e território. Clique no mapa: região, estado, cidade, zona e seção.</small></h1>
+  <h1>Eleição 2026, <em>em dados.</em> <small>Resultado da eleição por cargo e território. Clique no mapa: região, estado, cidade, zona e seção eleitoral.</small></h1>
   <div class="prog-line" id="nacProg"></div>
 </div></section>
 
@@ -90,6 +92,11 @@
     <div class="card feat"><b>Comparação com eleições anteriores</b><p>Deputados e senadores contra 2022, 2018 e 2014; presidente e governador contra o 1º e o 2º turno.</p></div>
     <div class="card feat"><b>Congresso e partidos</b><p>Câmara, Senado e Assembleias em hemiciclo, com esquerda, centro e direita e a evolução de cada partido desde 2014.</p></div>
   </section>
+  <section class="card por-estado">
+    <h2>Resultado da eleição 2026 por estado</h2>
+    <p class="sub">Governador, senadores, deputados eleitos e a votação em cada cidade, em páginas simples para ler e compartilhar.</p>
+    <nav class="filtros" aria-label="Resultados por estado"><a class="chip" href="resultados/ac/">Acre</a><a class="chip" href="resultados/al/">Alagoas</a><a class="chip" href="resultados/ap/">Amapá</a><a class="chip" href="resultados/am/">Amazonas</a><a class="chip" href="resultados/ba/">Bahia</a><a class="chip" href="resultados/ce/">Ceará</a><a class="chip" href="resultados/df/">Distrito Federal</a><a class="chip" href="resultados/es/">Espírito Santo</a><a class="chip" href="resultados/go/">Goiás</a><a class="chip" href="resultados/ma/">Maranhão</a><a class="chip" href="resultados/mt/">Mato Grosso</a><a class="chip" href="resultados/ms/">Mato Grosso do Sul</a><a class="chip" href="resultados/mg/">Minas Gerais</a><a class="chip" href="resultados/pr/">Paraná</a><a class="chip" href="resultados/pb/">Paraíba</a><a class="chip" href="resultados/pa/">Pará</a><a class="chip" href="resultados/pe/">Pernambuco</a><a class="chip" href="resultados/pi/">Piauí</a><a class="chip" href="resultados/rn/">Rio Grande do Norte</a><a class="chip" href="resultados/rs/">Rio Grande do Sul</a><a class="chip" href="resultados/rj/">Rio de Janeiro</a><a class="chip" href="resultados/ro/">Rondônia</a><a class="chip" href="resultados/rr/">Roraima</a><a class="chip" href="resultados/sc/">Santa Catarina</a><a class="chip" href="resultados/se/">Sergipe</a><a class="chip" href="resultados/sp/">São Paulo</a><a class="chip" href="resultados/to/">Tocantins</a></nav>
+  </section>
 </main>
 
 <footer><div class="wrap">
@@ -100,13 +107,13 @@
 </div>
 <div class="tip" id="tip"></div>
 
-<script src="js/espectro.js?v=20261008c"></script>
-<script src="js/app.js?v=20261008c"></script>
-<script src="js/congresso.js?v=20261008c"></script>
-<script src="js/partidos.js?v=20261008c"></script>
-<script src="js/historico.js?v=20261008c"></script>
-<script src="js/comparar.js?v=20261008c"></script>
-<script src="js/contador.js?v=20261008c"></script>
-<script src="js/anuncios.js?v=20261008c"></script>
+<script src="js/espectro.js?v=20261014a"></script>
+<script src="js/app.js?v=20261014a"></script>
+<script src="js/congresso.js?v=20261014a"></script>
+<script src="js/partidos.js?v=20261014a"></script>
+<script src="js/historico.js?v=20261014a"></script>
+<script src="js/comparar.js?v=20261014a"></script>
+<script src="js/contador.js?v=20261014a"></script>
+<script src="js/anuncios.js?v=20261014a"></script>
 </body>
 </html>

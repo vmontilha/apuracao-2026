@@ -262,3 +262,8 @@ footer .marca b { font-size: 16px; }
 :root[data-theme="dark"] .logo { background: #F3F6F9; }
 :root[data-theme="dark"] .cta, :root[data-theme="dark"] .seg button.on, :root[data-theme="dark"] .pular { color: var(--sobre-navy); }
 :root[data-theme="dark"] .ac-lista, :root[data-theme="dark"] .tip { box-shadow: 0 12px 28px rgba(0, 0, 0, .5); }
+
+/* links para as páginas de resultado de cada estado (também ajudam o Google a encontrá-las) */
+.por-estado { padding: 16px; margin: 16px 0; }
+.por-estado h2 { font-size: 24px; line-height: 32px; margin: 0 0 4px; }
+.por-estado .filtros { margin: 12px 0 0; }

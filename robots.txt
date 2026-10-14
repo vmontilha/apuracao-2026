@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /ferramentas/
+
+Sitemap: https://radardaeleicao.com.br/sitemap.xml
