@@ -3,9 +3,9 @@
    - Resumos que podem mudar durante uma apuração (mapa/): mostra o do cache e atualiza em segundo plano.
    - Página, estilos e scripts: rede primeiro (atualizações chegam na hora); cache só se estiver sem internet.
    - Resultados ao vivo do TSE e o contador: nunca passam pelo cache. */
-const VERSAO = 'radar-v1';
+const VERSAO = 'radar-v2';
 const FIXOS = /\/(geo|hist|zona|resumo|partido|mun|eleitosmun|marca)\//;
-const VIVOS_LOCAIS = /\/mapa\//;
+const VIVOS_LOCAIS = /\/mapa\/|\/busca\.json$/;
 
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(

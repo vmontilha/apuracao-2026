@@ -25,9 +25,10 @@
     location.replace('painel.html' + location.search + location.hash);
 </script>
 <meta name="google-adsense-account" content="ca-pub-8173681283177170">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8173681283177170" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="css/radar.css?v=20261015c">
+<link rel="stylesheet" href="css/radar.css?v=20261015d">
 <link rel="preload" href="geo/br.json" as="fetch" crossorigin>
+<link rel="preload" as="image" href="marca/logo-200.webp" imagesrcset="marca/logo-200.webp 1x, marca/logo-400.webp 2x" fetchpriority="high">
+<link rel="preconnect" href="https://resultados.tse.jus.br" crossorigin>
 <script>try { var t = localStorage.getItem("radar-tema"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
 if (/[?&]embed(=|&|$)/.test(location.search)) document.documentElement.classList.add("embed");</script>
 </head>
@@ -35,10 +36,10 @@ if (/[?&]embed(=|&|$)/.test(location.search)) document.documentElement.classList
 <a class="pular" href="#explorar">Ir para o conteúdo</a>
 <header class="barra-movel">
   <button class="menu-bt" id="menuBt" aria-controls="lateral" aria-expanded="false" aria-label="Abrir menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-  <a class="logo" href="#/" aria-label="Radar da Eleição — página inicial"><picture><source srcset="marca/logo-480.webp 1x, marca/logo-960.webp 2x" type="image/webp"><img src="marca/logo-480.png" width="160" height="60" alt="Radar da Eleição"></picture></a>
+  <a class="logo" href="#/" aria-label="Radar da Eleição — página inicial"><picture><source srcset="marca/logo-200.webp 1x, marca/logo-400.webp 2x" type="image/webp"><img src="marca/logo-200.png" fetchpriority="high" width="160" height="60" alt="Radar da Eleição"></picture></a>
 </header>
 <aside class="lateral" id="lateral">
-  <a class="logo" href="#/" aria-label="Radar da Eleição — página inicial"><picture><source srcset="marca/logo-480.webp 1x, marca/logo-960.webp 2x" type="image/webp"><img src="marca/logo-480.png" width="200" height="75" alt="Radar da Eleição"></picture></a>
+  <a class="logo" href="#/" aria-label="Radar da Eleição — página inicial"><picture><source srcset="marca/logo-200.webp 1x, marca/logo-400.webp 2x" type="image/webp"><img src="marca/logo-200.png" fetchpriority="high" width="200" height="75" alt="Radar da Eleição"></picture></a>
   <nav id="abas" aria-label="Seções do site">
     <a href="#/" data-aba="mapa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14"/></svg><span>Mapa</span></a>
     <a href="#/congresso" data-aba="congresso"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M4 20a8 8 0 0 1 16 0M8 20a4 4 0 0 1 8 0"/></svg><span>Composição eleita</span></a>
@@ -46,6 +47,7 @@ if (/[?&]embed(=|&|$)/.test(location.search)) document.documentElement.classList
     <a href="#/comparar" data-aba="comparar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M7 4 3 8m4-4 4 4m6 12V4m0 16-4-4m4 4 4-4"/></svg><span>Comparar</span></a>
     <a href="#/historico" data-aba="historico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5m4-2v5l3 2"/></svg><span>Histórico</span></a>
     <a href="resultados/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg><span>Resultados por estado</span></a>
+    <a href="resultados/2024/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V9l8-5 8 5v12M9 21v-6h6v6M3 21h18"/></svg><span>Eleição municipal 2024</span></a>
     <a href="painel.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zm9 0h7v4h-7zm0 6h7v10h-7zM4 13h7v7H4z"/></svg><span>Painel da apuração</span></a>
   </nav>
   <div class="lateral-pe">
@@ -112,14 +114,11 @@ if (/[?&]embed(=|&|$)/.test(location.search)) document.documentElement.classList
 </div>
 <div class="tip" id="tip"></div>
 
-<script src="js/espectro.js?v=20261015c"></script>
-<script src="js/app.js?v=20261015c"></script>
-<script src="js/congresso.js?v=20261015c"></script>
-<script src="js/partidos.js?v=20261015c"></script>
-<script src="js/historico.js?v=20261015c"></script>
-<script src="js/comparar.js?v=20261015c"></script>
-<script src="js/contador.js?v=20261015c"></script>
-<script src="js/compartilhar.js?v=20261015c"></script>
-<script src="js/anuncios.js?v=20261015c"></script>
+<script src="js/espectro.js?v=20261015d"></script>
+<script src="js/app.js?v=20261015d"></script>
+<script src="js/congresso.js?v=20261015d"></script>
+<script src="js/contador.js?v=20261015d" defer></script>
+<script src="js/compartilhar.js?v=20261015d" defer></script>
+<script src="js/anuncios.js?v=20261015d" defer></script>
 </body>
 </html>

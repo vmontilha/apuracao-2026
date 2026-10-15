@@ -1031,7 +1031,7 @@ $('panel').addEventListener('click', e => {
 async function ir() {
   lerHash();
   mostraAba();
-  if (S.aba !== 'mapa') { (ABAS[S.aba] || (() => {}))(); return; }
+  if (S.aba !== 'mapa') { const aba = S.aba; carregaAba(aba).then(() => { if (S.aba === aba) (ABAS[aba] || (() => {}))(); }); return; }
   const novo = await desenhar();
   if (S.uf && tEf(S.cargo) === '2' && S.mapa2?.uf !== S.uf) {
     S.mapa2 = null; const uf = S.uf;
@@ -1058,6 +1058,22 @@ setInterval(() => {
 nacional();
 detectaT2();
 const ABAS = {};
+// Abas pesadas só são baixadas quando alguém abre (o mapa abre mais rápido)
+const VERSAO_JS = ((document.currentScript && document.currentScript.src.match(/[?&]v=(\w+)/)) || [])[1] || '';
+const MODULOS = { partidos: 'js/partidos.js', historico: 'js/historico.js', comparar: 'js/comparar.js' };
+const baixando = {};
+function carregaAba(a) {
+  if (!MODULOS[a] || ABAS[a]) return Promise.resolve();
+  return baixando[a] || (baixando[a] = new Promise((ok, erro) => {
+    const s = document.createElement('script');
+    s.src = MODULOS[a] + (VERSAO_JS ? '?v=' + VERSAO_JS : '');
+    s.onload = ok; s.onerror = () => { delete baixando[a]; erro(); };
+    document.head.appendChild(s);
+  }));
+}
+// adianta o download quando o mouse passa pelo item do menu
+document.querySelectorAll('#abas a[data-aba]').forEach(l => l.addEventListener('pointerenter', () => carregaAba(l.dataset.aba).catch(() => {}), { once: true }));
+
 // menu lateral (no celular abre por cima da página) e tema claro/escuro
 const lateralEl = $('lateral'), veuEl = $('veu'), menuBt = $('menuBt');
 function menu(abrir) {
@@ -1082,7 +1098,7 @@ temaBt.onclick = () => {
   const t = document.documentElement.dataset.theme === 'dark' ? '' : 'dark';
   aplicaTema(t);
   try { t ? localStorage.setItem('radar-tema', t) : localStorage.removeItem('radar-tema'); } catch (e) {}
-  if (S.aba === 'comparar' && CMP.dados) desenhaResultado($('cmpRes'), []);
+  if (S.aba === 'comparar' && typeof CMP !== 'undefined' && CMP.dados) desenhaResultado($('cmpRes'), []);
   if (S.aba === 'congresso') ABAS.congresso();
 };
 function mostraAba() {
@@ -1112,3 +1128,30 @@ if (document.documentElement.classList.contains('embed')) {
 addEventListener('DOMContentLoaded', ir);
 // cache local (sw.js): mapas e dados históricos abrem do aparelho a partir da segunda visita
 if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+
+/* busca de candidato com sugestões enquanto digita (nome de urna, nome completo ou número) */
+function buscaCandidato(box, lista, escolhe) {
+  const inp = box.querySelector('input'), ul = box.querySelector('.ac-lista');
+  const base = lista.filter(k => k.total);
+  let atuais = [], ativo = 0;
+  const mostra = () => {
+    const q = norm(inp.value).trim();
+    atuais = (q ? base.filter(k => norm(k.nmu).includes(q) || norm(k.nm).includes(q) || String(k.n).startsWith(q)) : base).slice(0, 12);
+    ativo = 0;
+    ul.innerHTML = atuais.map((k, i) => `<button type="button" data-i="${i}" class="${i === 0 ? 'on' : ''}"><b>${esc(cap(k.nmu))}</b> <span>${esc(k.sg)} ${k.n}</span><small>${fmt(k.total)} votos</small></button>`).join('')
+      || '<div class="vazio">Nenhum candidato com esse nome ou número.</div>';
+    ul.hidden = false;
+  };
+  const marca = i => { ativo = (i + atuais.length) % atuais.length; ul.querySelectorAll('button').forEach((b, j) => b.classList.toggle('on', j === ativo)); ul.children[ativo]?.scrollIntoView({ block: 'nearest' }); };
+  inp.addEventListener('focus', () => { inp.select(); mostra(); });
+  inp.addEventListener('input', mostra);
+  inp.addEventListener('keydown', e => {
+    if (ul.hidden || !atuais.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); marca(ativo + 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); marca(ativo - 1); }
+    else if (e.key === 'Enter') { e.preventDefault(); escolhe(atuais[ativo].n); }
+    else if (e.key === 'Escape') ul.hidden = true;
+  });
+  ul.addEventListener('mousedown', e => { const b = e.target.closest('button[data-i]'); if (b) { e.preventDefault(); escolhe(atuais[b.dataset.i].n); } });
+  inp.addEventListener('blur', () => setTimeout(() => { ul.hidden = true; }, 150));
+}

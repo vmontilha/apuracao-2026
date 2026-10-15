@@ -81,6 +81,15 @@ def escreve(rel, texto):
     os.makedirs(os.path.dirname(p), exist_ok=True)
     open(p, 'w', encoding='utf-8', newline='\n').write(texto)
 
+_css = os.path.join(RAIZ, 'css', 'est.css')
+CSS = re.sub(r'/\*.*?\*/\s*', '', open(_css, encoding='utf-8').read(), flags=re.S).strip() if os.path.exists(_css) else ''
+# Depois que a página aparece: cache local (abre mais rápido na próxima visita) e, só então, o script de anúncios
+POS_CARGA = ("addEventListener('load',function(){"
+             "if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('/sw.js');"
+             "var f=function(){if(f.ok)return;f.ok=1;var s=document.createElement('script');s.async=1;s.crossOrigin='anonymous';"
+             "s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8173681283177170';document.head.appendChild(s)};"
+             "setTimeout(f,4000);['scroll','pointerdown','keydown'].forEach(function(e){addEventListener(e,f,{once:true,passive:true})})})")
+
 def pagina(caminho, titulo, descricao, migalhas, corpo, extra_ld=(), imagem=None, compart=''):
     url = f'{SITE}/{caminho}'
     imagem = imagem or f'{SITE}/marca/compartilhar.png'
@@ -95,7 +104,7 @@ def pagina(caminho, titulo, descricao, migalhas, corpo, extra_ld=(), imagem=None
 <title>{e(titulo)}</title>
 <meta name="description" content="{e(descricao)}">
 <link rel="canonical" href="{url}">
-<meta property="og:title" content="{e(titulo)}">
+<meta property="og:title" content="{e(titulo.split(' | ')[0])}">
 <meta property="og:description" content="{e(descricao)}">
 <meta property="og:type" content="article">
 <meta property="og:locale" content="pt_BR">
@@ -107,29 +116,31 @@ def pagina(caminho, titulo, descricao, migalhas, corpo, extra_ld=(), imagem=None
 <meta name="twitter:image" content="{imagem}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#12243A">
+<meta name="google-adsense-account" content="ca-pub-8173681283177170">
 <link rel="icon" href="/marca/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/marca/apple-touch-icon.png">
-<meta name="google-adsense-account" content="ca-pub-8173681283177170">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8173681283177170" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="/css/radar.css">
-<link rel="stylesheet" href="/css/resultados.css">
+<link rel="preload" as="image" href="/marca/logo-200.webp" imagesrcset="/marca/logo-200.webp 1x, /marca/logo-400.webp 2x" fetchpriority="high">
+<style>{CSS}</style>
 <script>try {{ var t = localStorage.getItem("radar-tema"); if (t) document.documentElement.dataset.theme = t; }} catch (e) {{}}</script>
 <script type="application/ld+json">{json.dumps(ld if len(ld) > 1 else ld[0], ensure_ascii=False)}</script>
 </head>
-<body class="estatica">
+<body>
 <header class="topo-est"><div class="wrap">
-  <a class="logo" href="/" aria-label="Radar da Eleição — página inicial"><picture><source srcset="/marca/logo-480.webp 1x, /marca/logo-960.webp 2x" type="image/webp"><img src="/marca/logo-480.png" width="160" height="60" alt="Radar da Eleição"></picture></a>
-  <nav><a href="/">Mapa interativo</a><a href="/resultados/">Resultados por estado</a><a href="/#/comparar">Comparar</a></nav>
+  <a class="logo" href="/" aria-label="Radar da Eleição — página inicial"><picture><source srcset="/marca/logo-200.webp 1x, /marca/logo-400.webp 2x" type="image/webp"><img src="/marca/logo-200.png" width="160" height="60" alt="Radar da Eleição" fetchpriority="high"></picture></a>
+  <div class="busca" role="search"><input type="search" placeholder="Buscar cidade ou candidato…" aria-label="Buscar cidade ou candidato" autocomplete="off"><ul hidden></ul></div>
+  <nav aria-label="Seções"><a href="/">Mapa</a><a href="/resultados/">2026</a><a href="/resultados/2024/">2024</a><a href="/#/comparar">Comparar</a></nav>
 </div></header>
 <main class="wrap est">
 <nav class="migalhas" aria-label="Você está em">{mig}</nav>
-{corpo.replace('<!--COMPARTILHAR-->', botao_compart(titulo, compart or descricao, url))}
+{corpo.replace('<!--COMPARTILHAR-->', botao_compart(titulo.split(' | ')[0], compart or descricao, url))}
 </main>
 <footer class="wrap rodape-est">
   <p><b>Radar da Eleição</b> · A eleição, em dados. Fonte: Tribunal Superior Eleitoral (TSE), resultados oficiais. Percentuais sobre os votos válidos.</p>
-  <p><a href="/resultados/">Resultados por estado</a> · <a href="/">Mapa interativo</a> · <a href="/privacidade.html">Privacidade</a></p>
+  <p><a href="/resultados/">Eleição 2026 por estado</a> · <a href="/resultados/2024/">Eleição municipal 2024</a> · <a href="/">Mapa interativo</a> · <a href="/privacidade.html">Privacidade</a></p>
 </footer>
 <script src="/js/compartilhar.js" defer></script>
+<script src="/js/busca.js" defer></script>
+<script>{POS_CARGA}</script>
 </body>
 </html>
 '''

@@ -397,30 +397,3 @@ async function mapaCmp(uf) {
     ? `<span><i class="sw" style="background:var(--serie-a)"></i>A proporcionalmente melhor</span><span><i class="sw" style="background:var(--serie-b)"></i>B proporcionalmente melhor</span><span style="margin-left:auto;color:var(--muted)">até ${pc(maxAbs * 100, 1).replace('%', '')} p.p.</span>`
     : `<span><i class="sw" style="background:${modo === 'a' ? 'var(--serie-a)' : 'var(--serie-b)'}"></i>mais forte = maior % (até ${pc(maxAbs * 100, 1)})</span>`;
 }
-
-/* busca de candidato com sugestões enquanto digita (nome de urna, nome completo ou número) */
-function buscaCandidato(box, lista, escolhe) {
-  const inp = box.querySelector('input'), ul = box.querySelector('.ac-lista');
-  const base = lista.filter(k => k.total);
-  let atuais = [], ativo = 0;
-  const mostra = () => {
-    const q = norm(inp.value).trim();
-    atuais = (q ? base.filter(k => norm(k.nmu).includes(q) || norm(k.nm).includes(q) || String(k.n).startsWith(q)) : base).slice(0, 12);
-    ativo = 0;
-    ul.innerHTML = atuais.map((k, i) => `<button type="button" data-i="${i}" class="${i === 0 ? 'on' : ''}"><b>${esc(cap(k.nmu))}</b> <span>${esc(k.sg)} ${k.n}</span><small>${fmt(k.total)} votos</small></button>`).join('')
-      || '<div class="vazio">Nenhum candidato com esse nome ou número.</div>';
-    ul.hidden = false;
-  };
-  const marca = i => { ativo = (i + atuais.length) % atuais.length; ul.querySelectorAll('button').forEach((b, j) => b.classList.toggle('on', j === ativo)); ul.children[ativo]?.scrollIntoView({ block: 'nearest' }); };
-  inp.addEventListener('focus', () => { inp.select(); mostra(); });
-  inp.addEventListener('input', mostra);
-  inp.addEventListener('keydown', e => {
-    if (ul.hidden || !atuais.length) return;
-    if (e.key === 'ArrowDown') { e.preventDefault(); marca(ativo + 1); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); marca(ativo - 1); }
-    else if (e.key === 'Enter') { e.preventDefault(); escolhe(atuais[ativo].n); }
-    else if (e.key === 'Escape') ul.hidden = true;
-  });
-  ul.addEventListener('mousedown', e => { const b = e.target.closest('button[data-i]'); if (b) { e.preventDefault(); escolhe(atuais[b.dataset.i].n); } });
-  inp.addEventListener('blur', () => setTimeout(() => { ul.hidden = true; }, 150));
-}

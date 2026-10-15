@@ -284,3 +284,6 @@ html.embed .conteudo { margin-left: 0; }
 html.embed main.wrap { padding: 8px; max-width: none; }
 html.embed .mapcard { position: static; }
 html.embed .embed-marca { display: inline-block; margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--accent); }
+
+/* reserva o espaço da linha de status da apuração (preenchida depois que o TSE responde) para a página não "pular" */
+#nacProg { min-height: 44px; align-content: flex-start; }
