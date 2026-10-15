@@ -71,7 +71,7 @@ def um_estado(uf, cm, nome=None):
 
 
 def deputados(uf, cm, c):
-    """site/mapa/<uf>-c<cargo>.json: votos de todos os deputados em cada município.
+    """site/mapa/<uf>-c<cargo>.json: votos de todos os candidatos (deputados, e com --maj governador e senador) em cada município.
     cands = [[número, nome de urna, partido, nome completo, sequencial (foto)]]; mu[cidade] = [pst%, válidos, i1, v1, i2, v2, ...]
     (i = posição em cands, só quem teve voto na cidade, em ordem decrescente)."""
     mus = [m['cd'] for m in cm]
@@ -123,6 +123,8 @@ def main():
     os.makedirs(SAIDA, exist_ok=True)
     args = [a.lower() for a in args]
     so_dep = '--dep' in args
+    so_res = '--res' in args   # só presidente, governador e senador (sem os deputados)
+    so_maj = '--maj' in args   # governador e senador, todos os candidatos em cada cidade (páginas de candidato)
     t2 = '--t2' in args
     args = [a for a in args if not a.startswith('--')]
     cm = get(f'{T}/6259/config/mun-e006259-cm.json')
@@ -135,10 +137,17 @@ def main():
             if u['cd'] in alvo:
                 print(segundo_turno(u['cd'], u['mu']), flush=True)
         return
+    if so_maj:
+        for u in cm['abr']:
+            if u['cd'] in alvo:
+                for c in ('3', '5'):
+                    print(deputados(u['cd'], u['mu'], c), flush=True)
+        return
     for u in cm['abr']:
         if u['cd'] in alvo:
             if not so_dep:
                 print(um_estado(u['cd'], u['mu']), flush=True)
+            if so_res: continue   # só o resumo de presidente, governador e senador
             for c in (['6', '8'] if u['cd'] == 'df' else ['6', '7']):
                 print(deputados(u['cd'], u['mu'], c), flush=True)
 

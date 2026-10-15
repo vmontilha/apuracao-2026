@@ -69,7 +69,7 @@ def main():
         for tit, itens in maj:
             if itens:
                 blocos.append(f'<section class="card bloco"><h2>{tit} ({len(itens)})</h2><ul class="links">'
-                              + ''.join(f'<li><b>{e(cap(k2[0]))}</b> <span class="sub">· <a href="/resultados/{uf}/">{e(UF_NM[uf])}</a> · {fmt(k2[3])} votos</span></li>' for uf, k2 in itens) + '</ul></section>')
+                              + ''.join(f'<li>{link_cand(uf, k2, "<b>" + e(cap(k2[0])) + "</b>")} <span class="sub">· <a href="/resultados/{uf}/">{e(UF_NM[uf])}</a> · {fmt(k2[3])} votos</span></li>' for uf, k2 in itens) + '</ul></section>')
         linhas = ''.join(f'<tr><td><a href="/resultados/{uf}/">{e(UF_NM[uf])}</a></td><td class="n">{u["fed"]}</td><td class="n">{fmt(u["vfed"])}</td><td class="n">{u["est"]}</td>'
                          f'<td class="n">{o["pref_uf"].get(uf, 0)}</td><td class="n">{o["ver_uf"].get(uf, 0)}</td></tr>'
                          for uf, u in sorted(o['uf'].items(), key=lambda x: (-x[1]['fed'], -x[1]['vfed'])) if u['vfed'] or u['vest'] or u['fed'] or u['est'] or o['pref_uf'].get(uf))

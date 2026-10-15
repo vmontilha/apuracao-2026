@@ -1,0 +1,51 @@
+# Todo dia confere se o TSE corrigiu algum resultado (candidatura anulada, recálculo de eleitos, retotalização)
+# e, se mudou, atualiza o resumo, as páginas de partido, de candidato e de estado/cidade, e avisa os buscadores.
+# Também pode ser rodado à mão na aba Actions do GitHub ("Run workflow").
+name: Correções do TSE
+
+on:
+  schedule:
+    - cron: '17 9 * * *'   # 6h17 de Brasília
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mapa-segundo-turno   # não roda junto com a atualização do 2º turno
+  cancel-in-progress: false
+
+jobs:
+  atualiza:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Confere o resumo com o TSE
+        run: python ferramentas/atualizar_resumo.py .
+      - name: Refaz as páginas se algo mudou
+        run: |
+          if git diff --quiet resumo; then
+            echo "Nada mudou no TSE"
+          else
+            python ferramentas/gerar_seo_partidos.py .
+            python ferramentas/gerar_seo_cand.py .
+            python ferramentas/gerar_seo.py .
+            python ferramentas/gerar_busca.py .
+          fi
+      - name: Publica se mudou
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add resumo partidos candidatos resultados sitemap*.xml busca.json
+          if git diff --cached --quiet; then
+            echo "Sem mudanças"
+          else
+            git commit -m "Correções do TSE: resultados atualizados (automático)"
+            git pull --rebase
+            git push
+            python ferramentas/avisar_buscadores.py || true
+          fi

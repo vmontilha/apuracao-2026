@@ -740,7 +740,8 @@ async function painel() {
       let cardCand = '';
       if (k) {
         const pos = lc.indexOf(k) + 1, Hk = hist(H, { nmc: k.nmc }, cc), vAnt = Hk ? (Hk.mun[S.mun] || 0) : null;
-        cardCand = `<h3>${esc(cap(k.nm))} em ${esc(nome)}</h3><div class="stats">
+        const pagK = ['3', '5'].includes(cargoUF(S.uf, S.cargo)) ? urlCandPag(S.uf, k.nm, k.n, 1e9) : '';
+        cardCand = `<h3>${esc(cap(k.nm))} em ${esc(nome)}${pagK ? ` <small class="sub"><a href="${pagK}">votos em todas as cidades →</a></small>` : ''}</h3><div class="stats">
           <div class="stat"><span>Votos</span><b>${fmt(k.v)}</b></div>
           <div class="stat"><span>% dos válidos</span><b>${pc(vvC ? k.v / vvC * 100 : 0, 2)}</b></div>
           <div class="stat"><span>Posição na cidade</span><b>${pos}º</b></div>

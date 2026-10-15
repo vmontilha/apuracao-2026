@@ -160,7 +160,7 @@ def tabela(cargo, lista, total, nomes, legenda='', status=None, href=None):
         st = (status or {}).get(str(n), '')
         tag = f' <span class="tag {"el" if "ELEITO" in st and "NÃO" not in st else "t2"}">{e(cap(st) if "TURNO" not in st else "2º turno")}</span>' if st and 'NÃO' not in st and 'SUPLENTE' not in st else ''
         nome = f'<b>{e(cap(nm))}</b>'
-        if href: nome = f'<a href="{href(n)}" title="Ver no mapa">{nome}</a>'
+        if href: nome = f'<a href="{href(n)}">{nome}</a>'
         linhas.append(f'<tr><td>{i + 1}º</td><td>{nome}{tag}</td><td>{link_partido(sg)}</td><td class="n">{fmt(v)}</td><td class="n">{pc(v, total)}</td></tr>')
     return f'''<section class="card bloco"><h2>{e(cargo)}</h2>{f'<p class="sub">{legenda}</p>' if legenda else ''}
 <div class="rolar"><table><thead><tr><th></th><th>Candidato(a)</th><th>Partido</th><th class="n">Votos</th><th class="n">% válidos</th></tr></thead>
@@ -187,6 +187,14 @@ def link_partido(sg, rotulo=None):
     k = chave_partido(sg).lower()
     rot = rotulo or e(sg)
     return f'<a href="/partidos/{k}/">{rot}</a>' if k in _partidos else rot
+
+_cand_num = {}
+def url_cand_num(uf, numero):
+    """Página do candidato pelo número (os números não se repetem dentro de um estado: 2 dígitos governador, 3 senador, 4-5 deputados)."""
+    if uf not in _cand_num:
+        d = os.path.join(RAIZ, 'candidatos', ANO, uf)
+        _cand_num[uf] = {p.rsplit('-', 1)[-1]: f'/candidatos/{ANO}/{uf}/{p}/' for p in os.listdir(d)} if os.path.isdir(d) else {}
+    return _cand_num[uf].get(str(numero), '')
 
 def link_cand(uf, nome_urna, numero, rotulo):
     """Link para a página do candidato, se ela existir (gerar_seo_cand.py)."""
@@ -263,7 +271,7 @@ def main():
             for c in ('1', '3', '5'):
                 if c not in d: continue
                 pst, tot, lst = d[c]
-                blocos.append(tabela(CARGO[c], lst, tot, nomes.get(c, {}), href=lambda n, c=c: f'/#/{uf}/{m["t"]}?c={c}&amp;k={n}', legenda=
+                blocos.append(tabela(CARGO[c], lst, tot, nomes.get(c, {}), href=lambda n, c=c: (c != '1' and url_cand_num(uf, n)) or f'/#/{uf}/{m["t"]}?c={c}&amp;k={n}', legenda=
                                      ('Cada eleitor votou em dois candidatos ao Senado; os percentuais somam 200%.' if c == '5' else '') +
                                      f' Principais candidatos na cidade · {pc(pst, 100).replace("%", "")}% das seções apuradas.'))
                 frases.append(frase_vencedor(CARGO[c], lst, tot, nomes.get(c, {}), onde))
@@ -304,7 +312,7 @@ def main():
             x = tse(uf, c, ele) if T2_BR else None
             if not x or not x[1]: continue
             tem_t2 = True
-            blocos.append(tabela(f'{CARGO[c]} · 2º turno', x[0][:2], x[1], x[2], f'Votação de {DATA_T2} {e(em_uf)} · {apurado(x[3])}.', x[4] if c == '3' else None, href=lambda n, c=c: f'/#/{uf}?c={c}&amp;t=2'))
+            blocos.append(tabela(f'{CARGO[c]} · 2º turno', x[0][:2], x[1], x[2], f'Votação de {DATA_T2} {e(em_uf)} · {apurado(x[3])}.', x[4] if c == '3' else None, href=lambda n, c=c: (c == '3' and url_cand_num(uf, n)) or f'/#/{uf}?c={c}&amp;t=2'))
             frases.append(frase_t2(CARGO[c], x[0], x[1], x[2], em_uf, x[3], eleito=(c == '3' and x[4].get(x[0][0][0], '').startswith('ELEITO'))))
         if tem_t2:
             blocos.append('<h2 class="turno-sep">1º turno · 4 de outubro</h2>')
@@ -316,14 +324,14 @@ def main():
         if R.get(c_gov):
             l, tot, nm_, st = top_resumo(c_gov, 8)
             if l:
-                blocos.append(tabela('Governador', l, tot, nm_, '', st, href=lambda n: f'/#/{uf}?c=3'))
+                blocos.append(tabela('Governador', l, tot, nm_, '', st, href=lambda n: url_cand_num(uf, n) or f'/#/{uf}?c=3'))
                 segundo = [nm_[n][0] for n, _ in l if 'TURNO' in st.get(n, '')]
                 eleito = [nm_[n][0] for n, _ in l if st.get(n, '').startswith('ELEITO')]
                 frases.append(f'{cap(eleito[0])} venceu a eleição para governador no 1º turno.' if eleito else
                               f'A disputa para governador vai para o 2º turno, em {DATA_T2}, entre {cap(segundo[0])} e {cap(segundo[1])}.' if len(segundo) == 2 else '')
         l, tot, nm_, st = top_resumo('c5t1', 8)
         if l:
-            blocos.append(tabela('Senador', l, tot, nm_, 'Duas vagas em disputa; cada eleitor votou em dois candidatos.', st, href=lambda n: f'/#/{uf}?c=5'))
+            blocos.append(tabela('Senador', l, tot, nm_, 'Duas vagas em disputa; cada eleitor votou em dois candidatos.', st, href=lambda n: url_cand_num(uf, n) or f'/#/{uf}?c=5'))
             el = [cap(nm_[n][0]) for n, _ in l if st.get(n, '').startswith('ELEITO')]
             if el: frases.append(f'Eleitos para o Senado: {" e ".join(el)}.')
         for chave, cargo in (('c6t1', 'Deputados federais eleitos'), ('c7t1', 'Deputados distritais eleitos' if uf == 'df' else 'Deputados estaduais eleitos')):

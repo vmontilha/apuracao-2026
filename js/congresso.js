@@ -185,7 +185,7 @@ ABAS.congresso = async function () {
     const q = norm($('cgBusca').value);
     $('cgLista').innerHTML = [...membros].sort((a, b) => b.v - a.v)
       .filter(m => !q || norm(m.nm + ' ' + m.sg + ' ' + m.uf + ' ' + (UF_NM[m.uf] || '') + ' ' + (m.extra || '')).includes(q)).slice(0, 1500)
-      .map(m => { const u = esfera !== 'municipal' && casa !== 'senado' && m.uf ? urlCandPag(m.uf, m.nm, m.n, 1e9) : ''; return `<tr><td>${u ? `<a class="lk" href="${u}">${esc(cap(m.nm))}</a>` : esc(cap(m.nm))}</td><td><i class="sw" style="background:${LADO_COR[lado(m.sg)]}"></i>${linkPartido(m.sg)}</td><td>${esc(esfera === 'municipal' && m.extra ? m.extra : m.uf.toUpperCase())}</td><td class="n">${fmt(m.v)}</td><td style="color:var(--muted)">${esc(esfera !== 'municipal' && m.extra ? m.extra : cap(m.sit || ''))}</td></tr>`; }).join('');
+      .map(m => { const u = esfera !== 'municipal' && m.uf ? urlCandPag(m.uf, m.nm, m.n, 1e9) : ''; return `<tr><td>${u ? `<a class="lk" href="${u}">${esc(cap(m.nm))}</a>` : esc(cap(m.nm))}</td><td><i class="sw" style="background:${LADO_COR[lado(m.sg)]}"></i>${linkPartido(m.sg)}</td><td>${esc(esfera === 'municipal' && m.extra ? m.extra : m.uf.toUpperCase())}</td><td class="n">${fmt(m.v)}</td><td style="color:var(--muted)">${esc(esfera !== 'municipal' && m.extra ? m.extra : cap(m.sit || ''))}</td></tr>`; }).join('');
   };
   $('cgBusca').oninput = lista; lista();
 };
