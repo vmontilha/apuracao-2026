@@ -267,3 +267,20 @@ footer .marca b { font-size: 16px; }
 .por-estado { padding: 16px; margin: 16px 0; }
 .por-estado h2 { font-size: 24px; line-height: 32px; margin: 0 0 4px; }
 .por-estado .filtros { margin: 12px 0 0; }
+
+/* compartilhar */
+.compart-bt, .est .compart-bt { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--axis); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 14px; font-weight: 700; }
+.compart-bt:hover { border-color: var(--navy); }
+.compart-bt svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.compart-menu { position: absolute; z-index: 60; display: flex; flex-direction: column; min-width: 200px; padding: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px rgba(18, 36, 58, .18); }
+.compart-menu a, .compart-menu button { display: block; text-align: left; padding: 8px 12px; border: 0; background: none; border-radius: 8px; color: var(--ink); font-size: 15px; cursor: pointer; text-decoration: none; }
+.compart-menu a:hover, .compart-menu button:hover { background: var(--surface-2); text-decoration: none; }
+
+/* modo incorporado (?embed=1): só o mapa e o painel, para outros sites colocarem num iframe */
+.embed-marca { display: none; }
+html.embed .lateral, html.embed .barra-movel, html.embed .veu, html.embed .hero, html.embed .features, html.embed footer,
+html.embed .por-estado, html.embed .anuncio, html.embed .pular, html.embed #compartBt { display: none !important; }
+html.embed .conteudo { margin-left: 0; }
+html.embed main.wrap { padding: 8px; max-width: none; }
+html.embed .mapcard { position: static; }
+html.embed .embed-marca { display: inline-block; margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--accent); }

@@ -1092,6 +1092,23 @@ function mostraAba() {
   for (const a of ['Congresso', 'Partidos', 'Historico', 'Comparar']) $('aba' + a).hidden = S.aba !== a.toLowerCase();
   document.querySelectorAll('#abas a[data-aba]').forEach(x => x.classList.toggle('on', x.dataset.aba === S.aba));
 }
+// compartilhar o que está na tela: estado e cidade levam à página de resultado (com prévia própria no WhatsApp)
+const slugDe = s => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+$('compartBt').onclick = e => {
+  const base = 'https://radardaeleicao.com.br/';
+  let url = base, titulo = 'Radar da Eleição · resultado da eleição 2026', texto = 'Resultado da eleição 2026 no mapa: do Brasil até a seção eleitoral.';
+  if (S.uf && S.mun) {
+    const m = S.geo?.mu?.find(x => x.t === S.mun), nm = cap(m?.n || '');
+    if (m) { url = `${base}resultados/${S.uf}/${slugDe(m.n)}/`; titulo = `Resultado da eleição 2026 em ${nm} (${S.uf.toUpperCase()})`; texto = `Veja como ${nm} (${S.uf.toUpperCase()}) votou na eleição 2026:`; }
+  } else if (S.uf) {
+    url = `${base}resultados/${S.uf}/`; titulo = `Resultado da eleição 2026 · ${UF_NM[S.uf]}`; texto = `Resultado da eleição 2026 · ${UF_NM[S.uf]}: governador, senadores e deputados eleitos.`;
+  }
+  radarCompartilhar(e.currentTarget, { titulo, texto, url });
+};
+if (document.documentElement.classList.contains('embed')) {
+  const atualizaMarca = () => { $('embedMarca').href = 'https://radardaeleicao.com.br/' + location.hash; };
+  addEventListener('hashchange', atualizaMarca); atualizaMarca();
+}
 addEventListener('DOMContentLoaded', ir);
 // cache local (sw.js): mapas e dados históricos abrem do aparelho a partir da segunda visita
 if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

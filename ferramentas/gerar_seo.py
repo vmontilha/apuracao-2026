@@ -14,6 +14,7 @@ import html, json, os, re, sys, time, unicodedata, urllib.request
 
 RAIZ = sys.argv[1] if len(sys.argv) > 1 else '.'
 SITE = 'https://radardaeleicao.com.br'
+DADOS = 'https://apuracao2026-dados.apuracao2026.workers.dev'  # imagens de prévia das cidades (muitas para o GitHub)
 ANO = '2026'
 T2_BR = False
 DATA_T1, DATA_T2 = '4 de outubro de 2026', '25 de outubro de 2026'
@@ -80,8 +81,9 @@ def escreve(rel, texto):
     os.makedirs(os.path.dirname(p), exist_ok=True)
     open(p, 'w', encoding='utf-8', newline='\n').write(texto)
 
-def pagina(caminho, titulo, descricao, migalhas, corpo, extra_ld=()):
+def pagina(caminho, titulo, descricao, migalhas, corpo, extra_ld=(), imagem=None, compart=''):
     url = f'{SITE}/{caminho}'
+    imagem = imagem or f'{SITE}/marca/compartilhar.png'
     ld = [{'@context': 'https://schema.org', '@type': 'BreadcrumbList', 'itemListElement': [
         {'@type': 'ListItem', 'position': i + 1, 'name': nm, 'item': f'{SITE}/{href}'} for i, (nm, href) in enumerate(migalhas)]}, *extra_ld]
     mig = ' <span>›</span> '.join(f'<a href="/{href}">{e(nm)}</a>' if i < len(migalhas) - 1 else f'<b>{e(nm)}</b>' for i, (nm, href) in enumerate(migalhas))
@@ -99,7 +101,10 @@ def pagina(caminho, titulo, descricao, migalhas, corpo, extra_ld=()):
 <meta property="og:locale" content="pt_BR">
 <meta property="og:site_name" content="Radar da Eleição">
 <meta property="og:url" content="{url}">
-<meta property="og:image" content="{SITE}/marca/compartilhar.png">
+<meta property="og:image" content="{imagem}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="{imagem}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#12243A">
 <link rel="icon" href="/marca/favicon.svg" type="image/svg+xml">
@@ -118,15 +123,21 @@ def pagina(caminho, titulo, descricao, migalhas, corpo, extra_ld=()):
 </div></header>
 <main class="wrap est">
 <nav class="migalhas" aria-label="Você está em">{mig}</nav>
-{corpo}
+{corpo.replace('<!--COMPARTILHAR-->', botao_compart(titulo, compart or descricao, url))}
 </main>
 <footer class="wrap rodape-est">
   <p><b>Radar da Eleição</b> · A eleição, em dados. Fonte: Tribunal Superior Eleitoral (TSE), resultados oficiais. Percentuais sobre os votos válidos.</p>
   <p><a href="/resultados/">Resultados por estado</a> · <a href="/">Mapa interativo</a> · <a href="/privacidade.html">Privacidade</a></p>
 </footer>
+<script src="/js/compartilhar.js" defer></script>
 </body>
 </html>
 '''
+
+def botao_compart(titulo, texto, url):
+    return (f'<button class="compart-bt" type="button" data-compartilhar data-titulo="{e(titulo)}" data-texto="{e(texto)}" data-url="{url}">'
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a3 3 0 1 0-2.8-4M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm12 6a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>'
+            '<span>Compartilhar no WhatsApp e redes</span></button>')
 
 def tabela(cargo, lista, total, nomes, legenda='', status=None):
     """lista = [(numero, votos)]; nomes = {numero: [nome, partido]}."""
@@ -141,6 +152,31 @@ def tabela(cargo, lista, total, nomes, legenda='', status=None):
     return f'''<section class="card bloco"><h2>{e(cargo)}</h2>{f'<p class="sub">{legenda}</p>' if legenda else ''}
 <div class="rolar"><table><thead><tr><th></th><th>Candidato(a)</th><th>Partido</th><th class="n">Votos</th><th class="n">% válidos</th></tr></thead>
 <tbody>{''.join(linhas)}</tbody></table></div></section>'''
+
+def incorporar(hash_, titulo):
+    """Código para blogs e jornais colocarem o mapa no site deles (com link de volta para cá)."""
+    cod = (f'<iframe src="{SITE}/?embed=1{hash_}" width="100%" height="680" style="border:0;max-width:1100px" loading="lazy" title="{e(titulo)}"></iframe>'
+           f'<p style="font:13px Arial,sans-serif">Mapa: <a href="{SITE}/">Radar da Eleição</a></p>')
+    return (f'<details class="card bloco incorporar"><summary>Incorporar este mapa no seu site ou blog</summary>'
+            f'<p class="sub">Copie o código abaixo e cole no seu site. O mapa é interativo e se atualiza sozinho.</p>'
+            f'<textarea readonly rows="4" onclick="this.select()">{e(cod)}</textarea></details>')
+
+def link_cand(uf, nome_urna, numero, rotulo):
+    """Link para a página do candidato, se ela existir (gerar_seo_cand.py)."""
+    c = f'candidatos/{ANO}/{uf}/{slug(nome_urna)}-{numero}/'
+    return f'<a href="/{c}">{rotulo}</a>' if os.path.exists(os.path.join(RAIZ, c, 'index.html')) else rotulo
+
+def mais_votados(uf, cd, nm, deps, lim=5):
+    """Deputados mais votados na cidade (federal e estadual/distrital)."""
+    partes = []
+    for c, d in deps.items():
+        if not d or cd not in d['mu']: continue
+        a = d['mu'][cd]; vv, l = a[1], a[2:]
+        itens = ''.join(f'<li>{link_cand(uf, d["cands"][l[j]][1], d["cands"][l[j]][0], "<b>" + e(cap(d["cands"][l[j]][1])) + "</b>")} '
+                        f'<span>{e(d["cands"][l[j]][2])} · {fmt(l[j + 1])} votos · {pc(l[j + 1], vv)}</span></li>' for j in range(0, min(len(l), lim * 2), 2))
+        if itens:
+            partes.append(f'<h3>{CARGO[c]}</h3><ol class="eleitos">{itens}</ol>')
+    return f'<section class="card bloco"><h2>Deputados mais votados em {e(nm)}</h2>{"".join(partes)}</section>' if partes else ''
 
 def frase_vencedor(cargo, lista, total, nomes, onde):
     if not lista or not total:
@@ -164,6 +200,7 @@ def main():
         if not geo or not mp:
             print('sem dados:', uf); continue
         nomes, R = mp['nomes'], resumo.get(uf, {})
+        deps = {c: le(f'mapa/{uf}-c{c}.json') for c in (['6', '8'] if uf == 'df' else ['6', '7'])}
         mus = sorted(geo['mu'], key=lambda m: m['n'])
         usados, cidades = set(), []
         soma = {c: {} for c in ('1', '3', '5')}; vv = {c: 0 for c in soma}
@@ -210,17 +247,21 @@ def main():
             caminho = f'resultados/{uf}/{s}/'
             corpo = f'''<h1>Resultado da eleição {ANO} em {e(nm)} ({uf.upper()})</h1>
 <p class="lead">Veja como {e(nm)} votou {'no 2º turno de ' + DATA_T2 + ' e ' if d2 else ''}no 1º turno das eleições gerais de {DATA_T1}: presidente, governador e senador, com votos e percentuais dos votos válidos. {e(' '.join(f for f in frases if f))}</p>
-<a class="cta" href="/#/{uf}/{m['t']}">Abrir {e(nm)} no mapa interativo: zonas, seções e deputados →</a>
+<a class="cta" href="/#/{uf}/{m['t']}">Abrir {e(nm)} no mapa interativo: zonas, seções e deputados →</a> <!--COMPARTILHAR-->
 {''.join(blocos)}
+{mais_votados(uf, m['t'], nm, deps)}
 <section class="card bloco"><h2>Mais sobre {e(nm)}</h2><ul class="links">
 <li><a href="/#/{uf}/{m['t']}?c=6">Deputados federais mais votados em {e(nm)}</a></li>
 <li><a href="/#/{uf}/{m['t']}?c=7">Deputados {'distritais' if uf == 'df' else 'estaduais'} mais votados em {e(nm)}</a></li>
+{f'<li><a href="/resultados/2024/{uf}/{s}/">Eleição 2024 em {e(nm)}: prefeito e vereadores eleitos</a></li>' if os.path.exists(os.path.join(RAIZ, 'mun', '2024', uf, m['t'] + '.json')) else ''}
 <li><a href="/#/comparar">Comparar a votação de {e(nm)} com 2022, 2018 e 2014</a></li>
-<li><a href="/resultados/{uf}/">Resultado da eleição {e(em_uf)}</a></li></ul></section>'''
+<li><a href="/resultados/{uf}/">Resultado da eleição {e(em_uf)}</a></li></ul></section>
+{incorporar(f"#/{uf}/{m['t']}", f'Mapa da eleição 2026 em {nm} ({uf.upper()})')}'''
             titulo = f'Resultado da eleição {ANO} em {nm} ({uf.upper()}): {"2º turno, " if d2 else ""}presidente, governador e senador | Radar da Eleição'
             desc = f'Resultado das eleições {ANO} em {nm} ({uf.upper()}): votos e percentuais para presidente, governador e senador{" no 1º e no 2º turno" if d2 else " no 1º turno"}. ' + (frases[0] if frases else '')
             escreve(caminho + 'index.html', pagina(caminho, titulo, desc[:300],
-                    [('Resultados', 'resultados/'), (nm_uf, f'resultados/{uf}/'), (nm, caminho)], corpo))
+                    [('Resultados', 'resultados/'), (nm_uf, f'resultados/{uf}/'), (nm, caminho)], corpo,
+                    imagem=f'{DADOS}/og/{uf}/{s}.png', compart=f'Veja como {nm} ({uf.upper()}) votou na eleição {ANO}:'))
             urls.append((caminho, '0.6')); total_paginas += 1
 
         # ---------- página do estado ----------
@@ -260,7 +301,7 @@ def main():
         for chave, cargo in (('c6t1', 'Deputados federais eleitos'), ('c7t1', 'Deputados distritais eleitos' if uf == 'df' else 'Deputados estaduais eleitos')):
             x = R.get(chave) or (R.get('c8t1') if chave == 'c7t1' else None)
             if not x or not x.get('eleitos'): continue
-            itens = ''.join(f'<li><b>{e(cap(k[0]))}</b> <span>{e(k[1])} · {fmt(k[3])} votos</span></li>' for k in sorted(x['eleitos'], key=lambda k: -k[3]))
+            itens = ''.join(f'<li>{link_cand(uf, k[0], k[2], "<b>" + e(cap(k[0])) + "</b>")} <span>{e(k[1])} · {fmt(k[3])} votos</span></li>' for k in sorted(x['eleitos'], key=lambda k: -k[3]))
             blocos.append(f'<section class="card bloco"><h2>{cargo} {e(em_uf)} ({len(x["eleitos"])})</h2><ol class="eleitos">{itens}</ol>'
                           f'<p class="sub"><a href="/#/{uf}?c={"6" if chave == "c6t1" else ("8" if uf == "df" else "7")}">Ver a votação de cada candidato por cidade no mapa →</a></p></section>')
         if tem_t2:
@@ -269,13 +310,16 @@ def main():
         lista_cid = ''.join(f'<li><a href="/resultados/{uf}/{s}/">{e(cap(m["n"]))}</a></li>' for m, s, d in cidades if d)
         corpo = f'''<h1>Resultado da eleição {ANO} {e(em_uf)}</h1>
 <p class="lead">Resultado das eleições gerais de {DATA_T1}{(' e do 2º turno de ' + DATA_T2) if tem_t2 else ''} {e(em_uf)}: presidente, governador, senadores e deputados eleitos, com dados oficiais do TSE. {e(' '.join(f for f in frases if f))}</p>
-<a class="cta" href="/#/{uf}">Abrir {e(nm_uf)} no mapa interativo →</a>
+<a class="cta" href="/#/{uf}">Abrir {e(nm_uf)} no mapa interativo →</a> <!--COMPARTILHAR-->
 {''.join(blocos)}
-<section class="card bloco"><h2>Resultado por cidade {e(em_uf)} ({len(cidades)} municípios)</h2><ul class="cidades">{lista_cid}</ul></section>'''
+<section class="card bloco"><h2>Resultado por cidade {e(em_uf)} ({len(cidades)} municípios)</h2><ul class="cidades">{lista_cid}</ul></section>
+{incorporar(f'#/{uf}', f'Mapa da eleição 2026 {em_uf}')}
+{f'<section class="card bloco"><h2>Eleições municipais de 2024 {e(em_uf)}</h2><p class="sub"><a href="/resultados/2024/{uf}/">Prefeitos e vereadores eleitos em 2024 em cada cidade →</a></p></section>' if uf != 'df' else ''}'''
         caminho = f'resultados/{uf}/'
         escreve(caminho + 'index.html', pagina(caminho, f'Resultado da eleição {ANO} {em_uf}: governador, senador e deputados eleitos | Radar da Eleição',
                 f'Resultado das eleições {ANO} {em_uf}: governador, senadores, deputados federais e estaduais eleitos e a votação em cada um dos {len(cidades)} municípios. Dados do TSE.',
-                [('Resultados', 'resultados/'), (nm_uf, caminho)], corpo))
+                [('Resultados', 'resultados/'), (nm_uf, caminho)], corpo,
+                imagem=f'{SITE}/img/og/{uf}.png', compart=f'Resultado da eleição {ANO} {em_uf}: governador, senadores e deputados eleitos.'))
         urls.append((caminho, '0.8')); total_paginas += 1
         estados.append((uf, nm_uf, frases[0] if frases else ''))
 
@@ -287,10 +331,11 @@ def main():
     if oficial: pres, vvbr, br_nomes = oficial[0][:6], oficial[1], oficial[2]
     corpo = f'''<h1>Resultado da eleição {ANO} por estado e cidade</h1>
 <p class="lead">Resultados oficiais {'do 2º turno de ' + DATA_T2 + ' e ' if t2 and t2[1] else ''}do 1º turno das eleições gerais de {DATA_T1} em todos os estados e nos 5.570 municípios do Brasil: presidente, governador, senador e deputados. Escolha um estado para ver os eleitos e a votação em cada cidade.</p>
-<a class="cta" href="/">Abrir o mapa interativo do Brasil →</a>
+<a class="cta" href="/">Abrir o mapa interativo do Brasil →</a> <!--COMPARTILHAR-->
 {tabela('Presidente · 2º turno · Brasil', t2[0][:2], t2[1], t2[2], f'Votação de {DATA_T2} · {apurado(t2[3])}. ' + frase_t2('Presidente', t2[0], t2[1], t2[2], 'no Brasil', t2[3], eleito=t2[4].get(t2[0][0][0], '').startswith('ELEITO')), t2[4]) if t2 and t2[1] else ''}
 {tabela('Presidente · 1º turno · Brasil', pres, vvbr, br_nomes, '' if t2 and t2[1] else f'Lula e Flávio Bolsonaro disputam o 2º turno em {DATA_T2}.')}
-<section class="card bloco"><h2>Escolha o estado</h2><ul class="estados">{''.join(f'<li><a href="/resultados/{uf}/"><b>{e(nm)}</b><span>{e(fr)}</span></a></li>' for uf, nm, fr in estados)}</ul></section>'''
+<section class="card bloco"><h2>Escolha o estado</h2><ul class="estados">{''.join(f'<li><a href="/resultados/{uf}/"><b>{e(nm)}</b><span>{e(fr)}</span></a></li>' for uf, nm, fr in estados)}</ul></section>
+<section class="card bloco"><h2>Eleições municipais de 2024</h2><p class="sub"><a href="/resultados/2024/">Prefeitos e vereadores eleitos em 2024 em todas as cidades →</a></p></section>'''
     escreve('resultados/index.html', pagina('resultados/', f'Resultado da eleição {ANO} por estado e cidade | Radar da Eleição',
             f'Resultado das eleições {ANO} em todos os estados e cidades do Brasil: presidente, governador, senador e deputados eleitos, com dados oficiais do TSE.',
             [('Resultados', 'resultados/')], corpo,
@@ -298,15 +343,22 @@ def main():
                        'description': 'Votos por candidato para presidente, governador, senador e deputados, por estado e município, a partir dos resultados oficiais do TSE.',
                        'url': f'{SITE}/resultados/', 'inLanguage': 'pt-BR', 'isAccessibleForFree': True,
                        'creator': {'@type': 'Organization', 'name': 'Radar da Eleição', 'url': SITE},
-                       'isBasedOn': 'https://resultados.tse.jus.br/', 'temporalCoverage': '2026-10-04', 'spatialCoverage': 'Brasil'}]))
+                       'isBasedOn': 'https://resultados.tse.jus.br/', 'temporalCoverage': '2026-10-04', 'spatialCoverage': 'Brasil'}],
+            imagem=f'{SITE}/img/og/br.png', compart=f'Resultado da eleição {ANO} em todos os estados e cidades do Brasil:'))
     total_paginas += 1
 
-    hoje = time.strftime('%Y-%m-%d')
-    escreve('sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-            + f'<url><loc>{SITE}/</loc><lastmod>{hoje}</lastmod><priority>1.0</priority></url>\n'
-            + ''.join(f'<url><loc>{SITE}/{u}</loc><lastmod>{hoje}</lastmod><priority>{p}</priority></url>\n' for u, p in urls)
-            + f'<url><loc>{SITE}/painel.html</loc><lastmod>{hoje}</lastmod><priority>0.5</priority></url>\n</urlset>\n')
+    escreve_sitemap('sitemap-2026.xml', [('', '1.0')] + urls + [('painel.html', '0.5')])
     escreve('robots.txt', f'User-agent: *\nAllow: /\nDisallow: /ferramentas/\n\nSitemap: {SITE}/sitemap.xml\n')
     print(f'{total_paginas} páginas, {len(urls) + 2} endereços no sitemap, {time.time() - t0:.1f}s')
 
-main()
+def escreve_sitemap(nome, urls):
+    """Um sitemap por assunto (sitemap-2026.xml, sitemap-2024.xml…) e o índice sitemap.xml com todos eles."""
+    hoje = time.strftime('%Y-%m-%d')
+    escreve(nome, '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            + ''.join(f'<url><loc>{SITE}/{u}</loc><lastmod>{hoje}</lastmod><priority>{p}</priority></url>\n' for u, p in urls) + '</urlset>\n')
+    partes = sorted(a for a in os.listdir(RAIZ) if re.fullmatch(r'sitemap-[\w-]+\.xml', a))
+    escreve('sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            + ''.join(f'<sitemap><loc>{SITE}/{a}</loc><lastmod>{hoje}</lastmod></sitemap>\n' for a in partes) + '</sitemapindex>\n')
+
+if __name__ == '__main__':
+    main()

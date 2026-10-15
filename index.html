@@ -26,9 +26,10 @@
 </script>
 <meta name="google-adsense-account" content="ca-pub-8173681283177170">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8173681283177170" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="css/radar.css?v=20261014b">
+<link rel="stylesheet" href="css/radar.css?v=20261015c">
 <link rel="preload" href="geo/br.json" as="fetch" crossorigin>
-<script>try { var t = localStorage.getItem("radar-tema"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>try { var t = localStorage.getItem("radar-tema"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+if (/[?&]embed(=|&|$)/.test(location.search)) document.documentElement.classList.add("embed");</script>
 </head>
 <body>
 <a class="pular" href="#explorar">Ir para o conteúdo</a>
@@ -62,10 +63,12 @@
 </div></section>
 
 <main class="wrap">
+  <a class="embed-marca" id="embedMarca" href="https://radardaeleicao.com.br/" target="_blank" rel="noopener">Radar da Eleição · abrir completo ↗</a>
   <section class="explorer" id="explorar">
     <div class="card mapcard">
       <div class="bar-top">
         <div class="crumbs" id="crumbs"></div>
+        <button class="compart-bt" id="compartBt" type="button" aria-label="Compartilhar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a3 3 0 1 0-2.8-4M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm12 6a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg><span>Compartilhar</span></button>
         <div class="seg" id="cargos">
           <button data-c="1">Presidente</button><button data-c="3">Governador</button><button data-c="5">Senador</button>
           <button data-c="6">Dep. Federal</button><button data-c="7">Dep. Estadual</button>
@@ -109,13 +112,14 @@
 </div>
 <div class="tip" id="tip"></div>
 
-<script src="js/espectro.js?v=20261014b"></script>
-<script src="js/app.js?v=20261014b"></script>
-<script src="js/congresso.js?v=20261014b"></script>
-<script src="js/partidos.js?v=20261014b"></script>
-<script src="js/historico.js?v=20261014b"></script>
-<script src="js/comparar.js?v=20261014b"></script>
-<script src="js/contador.js?v=20261014b"></script>
-<script src="js/anuncios.js?v=20261014b"></script>
+<script src="js/espectro.js?v=20261015c"></script>
+<script src="js/app.js?v=20261015c"></script>
+<script src="js/congresso.js?v=20261015c"></script>
+<script src="js/partidos.js?v=20261015c"></script>
+<script src="js/historico.js?v=20261015c"></script>
+<script src="js/comparar.js?v=20261015c"></script>
+<script src="js/contador.js?v=20261015c"></script>
+<script src="js/compartilhar.js?v=20261015c"></script>
+<script src="js/anuncios.js?v=20261015c"></script>
 </body>
 </html>

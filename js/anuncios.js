@@ -6,7 +6,7 @@
 const ADSENSE_CLIENT = 'ca-pub-8173681283177170';
 const SLOTS = { anuncio1: '', anuncio2: '' };
 (function () {
-  if (!ADSENSE_CLIENT) return;
+  if (!ADSENSE_CLIENT || document.documentElement.classList.contains('embed')) return;
   if (!document.querySelector('script[src*="adsbygoogle.js"]')) {  // o index.html já traz o script no <head>
     const s = document.createElement('script');
     s.async = true; s.crossOrigin = 'anonymous';
