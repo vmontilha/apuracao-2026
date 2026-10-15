@@ -104,6 +104,8 @@ def pagina(caminho, titulo, descricao, migalhas, corpo, extra_ld=()):
 <meta name="theme-color" content="#12243A">
 <link rel="icon" href="/marca/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/marca/apple-touch-icon.png">
+<meta name="google-adsense-account" content="ca-pub-8173681283177170">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8173681283177170" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="/css/radar.css">
 <link rel="stylesheet" href="/css/resultados.css">
 <script>try {{ var t = localStorage.getItem("radar-tema"); if (t) document.documentElement.dataset.theme = t; }} catch (e) {{}}</script>

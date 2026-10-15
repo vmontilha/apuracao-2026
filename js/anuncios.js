@@ -3,14 +3,16 @@
      ADSENSE_CLIENT = 'ca-pub-XXXXXXXXXXXXXXXX'
      SLOTS = { anuncio1: 'NNNNNNNNNN', anuncio2: 'NNNNNNNNNN' }   (ids dos blocos criados no painel do AdSense)
    e publique também um arquivo ads.txt na raiz do site com a linha que o AdSense indicar. */
-const ADSENSE_CLIENT = '';
+const ADSENSE_CLIENT = 'ca-pub-8173681283177170';
 const SLOTS = { anuncio1: '', anuncio2: '' };
 (function () {
   if (!ADSENSE_CLIENT) return;
-  const s = document.createElement('script');
-  s.async = true; s.crossOrigin = 'anonymous';
-  s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT;
-  document.head.appendChild(s);
+  if (!document.querySelector('script[src*="adsbygoogle.js"]')) {  // o index.html já traz o script no <head>
+    const s = document.createElement('script');
+    s.async = true; s.crossOrigin = 'anonymous';
+    s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT;
+    document.head.appendChild(s);
+  }
   for (const [id, slot] of Object.entries(SLOTS)) {
     const el = document.getElementById(id);
     if (!el || !slot) continue;
