@@ -84,7 +84,7 @@ def main():
             foto = FOTO.format(uf=uf, sq=k['sq']) if k['sq'] else ''
             corpo = f'''<div class="cand-topo">{f'<img src="{foto}" alt="Foto de {e(nm)}" width="96" height="128" loading="lazy" onerror="this.remove()">' if foto else ''}
 <div><h1>{e(nm)} ({e(k['sg'])}): votos por cidade na eleição {ANO}</h1>
-<p class="sub">{e(cargo)} · {e(nm_uf)} · número {k['n']}{' · ' + e(sit) if sit else ''}</p></div></div>
+<p class="sub">{e(cargo)} · {G.link_partido(k['sg'])} · <a href="/resultados/{uf}/">{e(nm_uf)}</a> · número {k['n']}{' · ' + e(sit) if sit else ''}</p></div></div>
 <p class="lead">{e(' '.join(frases))}</p>
 <a class="cta" href="/#/{uf}?c={k['cargo']}&amp;k={k['n']}">Ver {e(nm)} no mapa interativo →</a> <!--COMPARTILHAR-->
 <section class="card bloco"><h2>Resumo</h2><div class="rolar"><table><tbody>
@@ -96,7 +96,7 @@ def main():
 </tbody></table></div></section>
 <section class="card bloco"><h2>Votos de {e(nm)} em cada cidade</h2><p class="sub">% = parcela dos votos válidos para {e(cargo.lower())} na cidade. {'2022 = votos na mesma cidade na eleição anterior.' if ant else ''}</p>
 <div class="rolar"><table><thead><tr><th>Cidade</th><th class="n">Votos {ANO}</th><th class="n">%</th><th class="n">2022</th></tr></thead><tbody>{linhas}</tbody></table></div></section>
-{f'<section class="card bloco"><h2>Outros eleitos do {e(k["sg"])} {e(em_uf)}</h2><ul class="links">' + ''.join(f'<li><a href="/{url_cand(uf, x)}">{e(cap(x["nm"]))}</a> <span class="sub">{fmt(x["v"])} votos</span></li>' for x in colegas) + '</ul></section>' if colegas else ''}
+{f'<section class="card bloco"><h2>Outros eleitos do {G.link_partido(k["sg"])} {e(em_uf)}</h2><ul class="links">' + ''.join(f'<li><a href="/{url_cand(uf, x)}">{e(cap(x["nm"]))}</a> <span class="sub">{fmt(x["v"])} votos</span></li>' for x in colegas) + '</ul></section>' if colegas else ''}
 <p class="sub"><a href="/resultados/{uf}/">Todos os eleitos {e(em_uf)} →</a></p>'''
             titulo = f'{nm} ({k["sg"]}): votos por cidade · {cargo} {uf.upper()} {ANO} | Radar da Eleição'
             desc = (f'Quantos votos {nm} teve em cada cidade {em_uf} na eleição {ANO} para {cargo.lower()}: {fmt(k["v"])} votos, {k["pos"]}º lugar'

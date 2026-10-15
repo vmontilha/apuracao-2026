@@ -41,7 +41,7 @@ ABAS.historico = async function () {
     const lista = () => {
       const q = norm($('hFiltro').value);
       $('hLista').innerHTML = doCargo.map((o, i) => ({ o, i })).filter(({ o }) => !q || norm(o.nmu + ' ' + o.nm + ' ' + o.sg + ' ' + o.n).includes(q)).slice(0, 400)
-        .map(({ o, i }) => `<tr data-nm="${esc(o.nm)}" style="cursor:pointer"><td>${i + 1}</td><td><b>${esc(cap(o.nmu))}</b></td><td><i class="sw" style="background:${LADO_COR[lado(o.sg)]}"></i>${esc(o.sg)}</td><td class="n">${o.n}</td>
+        .map(({ o, i }) => `<tr data-nm="${esc(o.nm)}" style="cursor:pointer"><td>${i + 1}</td><td><b>${esc(cap(o.nmu))}</b></td><td><i class="sw" style="background:${LADO_COR[lado(o.sg)]}"></i>${linkPartido(o.sg)}</td><td class="n">${o.n}</td>
           <td class="n">${fmt(o.total)}</td><td class="n">${pc(tot ? o.total / tot * 100 : 0, 2)}</td><td>${sitTag(o.sit)}</td></tr>`).join('');
     };
     $('hFiltro').oninput = lista; lista();

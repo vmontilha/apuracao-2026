@@ -287,3 +287,7 @@ html.embed .embed-marca { display: inline-block; margin: 0 0 8px; font-size: 13p
 
 /* reserva o espaço da linha de status da apuração (preenchida depois que o TSE responde) para a página não "pular" */
 #nacProg { min-height: 44px; align-content: flex-start; }
+
+/* links dentro de listas e tabelas: discretos, mas visíveis ao passar o mouse */
+a.lk { color: inherit; text-decoration: underline; text-decoration-color: var(--axis); text-underline-offset: 2px; }
+a.lk:hover { color: var(--accent); text-decoration-color: currentColor; }

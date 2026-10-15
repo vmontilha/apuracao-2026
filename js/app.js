@@ -67,6 +67,15 @@ async function pool(items, n, fn) {
 const cargoUF = (uf, c) => (uf === 'df' && c === '7') ? '8' : c;
 function urlRes(uf, mun, c, t) { c = cargoUF(uf, c); const e = eleDo(c, t); return `${T}/${e}/dados/${uf}/${uf}${mun || ''}-c${pad(c, 4)}-e${pad(e, 6)}-u.json`; }
 const urlBr = t => { const e = eleDo('1', t); return `${T}/${e}/dados/br/br-c0001-e${pad(e, 6)}-u.json`; };
+// tudo clicável: sigla -> página do partido; deputado -> página do candidato (só existem para quem teve 10 mil votos ou mais)
+const PARTIDOS_PAG = new Set(['agir', 'avante', 'cidadania', 'dc', 'democrata', 'mdb', 'missao', 'mobiliza', 'novo', 'pcb', 'pcdob', 'pco', 'pdt', 'pl', 'pmb', 'pode', 'pp', 'prd', 'prtb', 'psb', 'psd', 'psdb', 'psol', 'pstu', 'pt', 'pv', 'rede', 'republicanos', 'solidariedade', 'uniao', 'up']);
+const chavePartido = sg => String(sg || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+function linkPartido(sg) {
+  const k = chavePartido(sg).toLowerCase();
+  return PARTIDOS_PAG.has(k) ? `<a class="lk" href="/partidos/${k}/" title="Página do partido">${esc(sg)}</a>` : esc(sg || '');
+}
+const slugTxt = s => String(s || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const urlCandPag = (uf, nm, n, v) => v >= 10000 ? `/candidatos/2026/${uf}/${slugTxt(nm)}-${n}/` : '';
 const urlFoto = (c, uf, sq) => `${T}/${eleDo(c)}/fotos/${c === '1' ? 'br' : uf}/${sq}.jpeg`;
 // foto pequena do candidato (some sem deixar buraco se o TSE não tiver a imagem)
 const avatar = (url, cls = 'av') => url ? `<img class="${cls}" src="${url}" alt="" loading="lazy" onerror="this.remove()">` : '';
@@ -590,8 +599,10 @@ function situacao(k, i, r, c) {
 function linhas(lista, total, opt = {}) {
   if (!lista.length) return '<div class="empty">Sem votos apurados ainda.</div>';
   const max = lista[0].v || 1;
+  const comCand = opt.c && ['mun', 'zona', 'sec'].includes(nivel());
+  const nomeDe = k => { const t = esc(k.cru ? k.nm : cap(k.nm)); return comCand && /^\d{2,}$/.test(k.n || '') ? `<a class="lk" href="${hashDe({ cand: k.n, cargo: opt.c })}" title="Ver onde teve mais votos">${t}</a>` : t; };
   return `<div class="res">${lista.map((k, i) => `
-    <div class="r"><div class="n">${avatar(k.foto)}${opt.rank ? `<small style="margin:0 6px 0 0">${i + 1}º</small>` : ''}${esc(k.cru ? k.nm : cap(k.nm))}<small>${esc(k.sg || '')}${k.n && k.n.length > 2 ? ' · ' + k.n : ''}</small>${k.tag || ''}</div>
+    <div class="r"><div class="n">${avatar(k.foto)}${opt.rank ? `<small style="margin:0 6px 0 0">${i + 1}º</small>` : ''}${nomeDe(k)}<small>${linkPartido(k.sg || '')}${k.n && k.n.length > 2 ? ' · ' + k.n : ''}</small>${k.tag || ''}</div>
     <div class="v">${pc(total ? k.v / total * 100 : 0)}<small>${fmt(k.v)}</small></div>
     <div class="bar"><i style="width:${(k.v / max * 100).toFixed(1)}%;background:${cor(k.n)}"></i></div></div>`).join('')}</div>`;
 }
@@ -605,7 +616,7 @@ function resultadoTSE(r, c, lim = 8) {
       <div class="stat"><span>Votos válidos</span><b>${fmt(vv)}</b></div>
       <div class="stat"><span>Brancos / nulos</span><b>${fmt(num(r.v?.vb) + num(r.v?.tvn))}</b></div>
     </div>
-    ${lim ? `<h3>${CARGO_NM[c]}</h3>${linhas(top, vv)}` : ''}
+    ${lim ? `<h3>${CARGO_NM[c]}</h3>${linhas(top, vv, { c })}` : ''}
     ${lim && l.length > lim ? `<div class="note">+ ${l.length - lim} candidatos</div>` : ''}`;
 }
 function somaEstados(c, ufs) {
@@ -813,7 +824,7 @@ function blocoCargo(C, N, c, lim) {
   const { l, val } = listaBU(C, N, c);
   const brancoNulo = C.branco + C.nulo;
   return `<h3>${CARGO_NM[c]}${c === '5' ? ' <small style="text-transform:none;letter-spacing:0">(2 votos por eleitor)</small>' : ''}</h3>
-    ${linhas(l.slice(0, lim), val)}
+    ${linhas(l.slice(0, lim), val, { c })}
     ${l.length > lim ? `<div class="note">+ ${l.length - lim} com votos</div>` : ''}
     <div class="note">Válidos ${fmt(val)} · brancos ${fmt(C.branco)} · nulos ${fmt(C.nulo)}${C.outros ? ' · outros ' + fmt(C.outros) : ''}</div>`;
 }
@@ -941,7 +952,7 @@ async function nacional() {
     const r = S.br, vv = num(r.v?.vv), l = cands(r).slice(0, 4);
     S.tiles = l.map(k => `<div class="cand-tile" style="--c:${cor(k.n)}">
       <img src="${urlFoto('1', 'br', k.sq)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph'}))">
-      <div style="flex:1;min-width:0"><div class="nm">${esc(cap(k.nm))}${situacao(k)}</div><div class="pp">${esc(k.sg)} · ${fmt(k.v)} votos</div>
+      <div style="flex:1;min-width:0"><div class="nm">${esc(cap(k.nm))}${situacao(k)}</div><div class="pp">${linkPartido(k.sg)} · ${fmt(k.v)} votos</div>
       <div class="big">${pc(vv ? k.v / vv * 100 : 0, 2)}</div><div class="bar"><i style="width:${vv ? k.v / vv * 100 : 0}%"></i></div></div></div>`).join('');
     const p = num(r.s?.pstn);
     $('nacProg').innerHTML = `<span><span class="dot ${p < 100 ? 'on' : ''}"></span>${p < 100 ? 'Apuração do ' + (S.turno === '2' ? '2º' : '1º') + ' turno em andamento' : 'Apuração do ' + (S.turno === '2' ? '2º' : '1º') + ' turno concluída'}</span>
@@ -988,8 +999,8 @@ async function painelDep(vivo) {
     const cid = Object.entries(D.mu).map(([cd, m]) => ({ cd, m, v: votosEm(m, k.i), v22: H2 ? (H2.mun[cd] || 0) : null }))
       .filter(x => x.v || x.v22).sort((a, b) => b.v - a.v);
     const nome = cd => cap(S.geo.mu.find(x => x.t === cd)?.n || cd);
-    h = `<h2 class="com-foto">${avatar(k.sq && urlFoto(c, S.uf, k.sq), 'av grande')}<span>${esc(cap(k.nm))} <small class="sub">${esc(k.sg)} · ${k.n} · ${CARGO_NM[c]}</small></span></h2>
-      <div class="sub">${UF_NM[S.uf]} · <a href="${hashDe({ cand: '' })}">trocar candidato</a></div>
+    h = `<h2 class="com-foto">${avatar(k.sq && urlFoto(c, S.uf, k.sq), 'av grande')}<span>${esc(cap(k.nm))} <small class="sub">${linkPartido(k.sg)} · ${k.n} · ${CARGO_NM[c]}</small></span></h2>
+      <div class="sub">${UF_NM[S.uf]} · <a href="${hashDe({ cand: '' })}">trocar candidato</a>${urlCandPag(S.uf, k.nm, k.n, k.v) ? ` · <a href="${urlCandPag(S.uf, k.nm, k.n, k.v)}">página de ${esc(cap(k.nm))} com votos em cada cidade</a>` : ''}</div>
       <div class="stats">
         <div class="stat"><span>Votos</span><b>${fmt(k.v)}</b></div>
         <div class="stat"><span>% dos válidos</span><b>${pc(D.vv ? k.v / D.vv * 100 : 0, 2)}</b></div>

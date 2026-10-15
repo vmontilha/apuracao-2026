@@ -21,13 +21,13 @@ def tabela_pref(titulo, cands, legenda):
     tot = sum(c[7] for c in cands)
     linhas = ''.join(
         f'<tr><td>{i + 1}º</td><td><b>{e(cap(c[1]))}</b>{" <span class=\"tag el\">Eleito(a)</span>" if ELEITO(c[6]) else " <span class=\"tag t2\">2º turno</span>" if "TURNO" in c[6] else ""}</td>'
-        f'<td>{e(c[3])}</td><td class="n">{fmt(c[7])}</td><td class="n">{pc(c[7], tot)}</td></tr>' for i, c in enumerate(cands))
+        f'<td>{G.link_partido(c[3])}</td><td class="n">{fmt(c[7])}</td><td class="n">{pc(c[7], tot)}</td></tr>' for i, c in enumerate(cands))
     return (f'<section class="card bloco"><h2>{titulo}</h2><p class="sub">{legenda}</p><div class="rolar"><table><thead><tr><th></th><th>Candidato(a)</th>'
             f'<th>Partido</th><th class="n">Votos</th><th class="n">% válidos</th></tr></thead><tbody>{linhas}</tbody></table></div></section>')
 
 def tabela_ver(titulo, cands, legenda, mostra_sit=True):
     linhas = ''.join(
-        f'<tr><td>{i + 1}º</td><td><b>{e(cap(c[1]))}</b></td><td>{e(c[3])}</td><td class="n">{fmt(c[7])}</td>'
+        f'<tr><td>{i + 1}º</td><td><b>{e(cap(c[1]))}</b></td><td>{G.link_partido(c[3])}</td><td class="n">{fmt(c[7])}</td>'
         + (f'<td>{e("por média" if "MÉDIA" in c[6] else "por quociente" if "QP" in c[6] else "")}</td>' if mostra_sit else '') + '</tr>'
         for i, c in enumerate(cands))
     return (f'<section class="card bloco"><h2>{titulo}</h2><p class="sub">{legenda}</p><div class="rolar"><table><thead><tr><th></th><th>Vereador(a)</th>'
@@ -61,11 +61,11 @@ def main():
                 frases.append(f'A Câmara Municipal tem {len(eleitos)} vereadores eleitos; a maior votação foi de {cap(eleitos[0][1])} ({eleitos[0][3]}), com {fmt(eleitos[0][7])} votos.')
             partidos = {}
             for c in eleitos: partidos[c[3]] = partidos.get(c[3], 0) + 1
-            vagas = ' · '.join(f'{p} {n}' for p, n in sorted(partidos.items(), key=lambda x: (-x[1], x[0])))
+            vagas = ' · '.join(f'{G.link_partido(p)} {n}' for p, n in sorted(partidos.items(), key=lambda x: (-x[1], x[0])))
             blocos = []
             if pref2: blocos.append(tabela_pref('Prefeito · 2º turno', pref2, f'Votação de {d2}.'))
             if pref1: blocos.append(tabela_pref('Prefeito · 1º turno' if pref2 else 'Prefeito', pref1, f'Votação de {d1}.'))
-            if eleitos: blocos.append(tabela_ver(f'Vereadores eleitos ({len(eleitos)})', eleitos, f'Vagas por partido: {e(vagas)}.'))
+            if eleitos: blocos.append(tabela_ver(f'Vereadores eleitos ({len(eleitos)})', eleitos, f'Vagas por partido: {vagas}.'))
             if supl: blocos.append(tabela_ver('Suplentes mais votados', supl, 'Assumem se um vereador do mesmo partido ou federação deixar o cargo.', False))
             caminho = f'resultados/{ANO}/{uf}/{s}/'
             corpo = f'''<h1>Eleição {ANO} em {e(nm)} ({uf.upper()}): prefeito e vereadores eleitos</h1>
@@ -88,13 +88,13 @@ def main():
         part = {}
         for _, _, v, _ in cidades:
             if v: part[v[3]] = part.get(v[3], 0) + 1
-        resumo_part = ' · '.join(f'{p} {n}' for p, n in sorted(part.items(), key=lambda x: (-x[1], x[0])))
-        linhas = ''.join(f'<tr><td><a href="/resultados/{ANO}/{uf}/{s}/">{e(nm)}</a></td><td>{e(cap(v[1])) if v else "–"}{" <small>(2º turno)</small>" if t2 else ""}</td><td>{e(v[3]) if v else ""}</td></tr>'
+        resumo_part = ' · '.join(f'{G.link_partido(p)} {n}' for p, n in sorted(part.items(), key=lambda x: (-x[1], x[0])))
+        linhas = ''.join(f'<tr><td><a href="/resultados/{ANO}/{uf}/{s}/">{e(nm)}</a></td><td>{e(cap(v[1])) if v else "–"}{" <small>(2º turno)</small>" if t2 else ""}</td><td>{G.link_partido(v[3]) if v else ""}</td></tr>'
                          for nm, s, v, t2 in cidades)
         corpo = f'''<h1>Prefeitos eleitos em {ANO} {e(em_uf)}</h1>
 <p class="lead">Resultado das eleições municipais de {ANO} {e(em_uf)}: o prefeito eleito em cada um dos {len(cidades)} municípios e o link para a lista de vereadores eleitos em cada cidade.</p>
 <a class="cta" href="/resultados/{uf}/">Ver a eleição 2026 {e(em_uf)} →</a> <!--COMPARTILHAR-->
-<section class="card bloco"><h2>Prefeituras por partido</h2><p class="sub">{e(resumo_part)}</p></section>
+<section class="card bloco"><h2>Prefeituras por partido</h2><p class="sub">{resumo_part}</p></section>
 <section class="card bloco"><h2>Prefeito eleito em cada cidade</h2><div class="rolar"><table><thead><tr><th>Cidade</th><th>Prefeito(a) eleito(a)</th><th>Partido</th></tr></thead><tbody>{linhas}</tbody></table></div></section>'''
         caminho = f'resultados/{ANO}/{uf}/'
         escreve(caminho + 'index.html', pagina(caminho, f'Prefeitos eleitos em {ANO} {em_uf}: resultado em todas as cidades | Radar da Eleição',

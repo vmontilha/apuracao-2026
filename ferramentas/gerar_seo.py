@@ -128,7 +128,7 @@ def pagina(caminho, titulo, descricao, migalhas, corpo, extra_ld=(), imagem=None
 <header class="topo-est"><div class="wrap">
   <a class="logo" href="/" aria-label="Radar da Eleição — página inicial"><picture><source srcset="/marca/logo-200.webp 1x, /marca/logo-400.webp 2x" type="image/webp"><img src="/marca/logo-200.png" width="160" height="60" alt="Radar da Eleição" fetchpriority="high"></picture></a>
   <div class="busca" role="search"><input type="search" placeholder="Buscar cidade ou candidato…" aria-label="Buscar cidade ou candidato" autocomplete="off"><ul hidden></ul></div>
-  <nav aria-label="Seções"><a href="/">Mapa</a><a href="/resultados/">2026</a><a href="/resultados/2024/">2024</a><a href="/#/comparar">Comparar</a></nav>
+  <nav aria-label="Seções"><a href="/">Mapa</a><a href="/resultados/">2026</a><a href="/resultados/2024/">2024</a><a href="/partidos/">Partidos</a><a href="/#/comparar">Comparar</a></nav>
 </div></header>
 <main class="wrap est">
 <nav class="migalhas" aria-label="Você está em">{mig}</nav>
@@ -136,7 +136,7 @@ def pagina(caminho, titulo, descricao, migalhas, corpo, extra_ld=(), imagem=None
 </main>
 <footer class="wrap rodape-est">
   <p><b>Radar da Eleição</b> · A eleição, em dados. Fonte: Tribunal Superior Eleitoral (TSE), resultados oficiais. Percentuais sobre os votos válidos.</p>
-  <p><a href="/resultados/">Eleição 2026 por estado</a> · <a href="/resultados/2024/">Eleição municipal 2024</a> · <a href="/">Mapa interativo</a> · <a href="/privacidade.html">Privacidade</a></p>
+  <p><a href="/resultados/">Eleição 2026 por estado</a> · <a href="/resultados/2024/">Eleição municipal 2024</a> · <a href="/partidos/">Partidos</a> · <a href="/">Mapa interativo</a> · <a href="/privacidade.html">Privacidade</a></p>
 </footer>
 <script src="/js/compartilhar.js" defer></script>
 <script src="/js/busca.js" defer></script>
@@ -150,7 +150,7 @@ def botao_compart(titulo, texto, url):
             '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a3 3 0 1 0-2.8-4M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm12 6a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>'
             '<span>Compartilhar no WhatsApp e redes</span></button>')
 
-def tabela(cargo, lista, total, nomes, legenda='', status=None):
+def tabela(cargo, lista, total, nomes, legenda='', status=None, href=None):
     """lista = [(numero, votos)]; nomes = {numero: [nome, partido]}."""
     if not lista:
         return ''
@@ -159,7 +159,9 @@ def tabela(cargo, lista, total, nomes, legenda='', status=None):
         nm, sg = nomes.get(str(n), [n, ''])
         st = (status or {}).get(str(n), '')
         tag = f' <span class="tag {"el" if "ELEITO" in st and "NÃO" not in st else "t2"}">{e(cap(st) if "TURNO" not in st else "2º turno")}</span>' if st and 'NÃO' not in st and 'SUPLENTE' not in st else ''
-        linhas.append(f'<tr><td>{i + 1}º</td><td><b>{e(cap(nm))}</b>{tag}</td><td>{e(sg)}</td><td class="n">{fmt(v)}</td><td class="n">{pc(v, total)}</td></tr>')
+        nome = f'<b>{e(cap(nm))}</b>'
+        if href: nome = f'<a href="{href(n)}" title="Ver no mapa">{nome}</a>'
+        linhas.append(f'<tr><td>{i + 1}º</td><td>{nome}{tag}</td><td>{link_partido(sg)}</td><td class="n">{fmt(v)}</td><td class="n">{pc(v, total)}</td></tr>')
     return f'''<section class="card bloco"><h2>{e(cargo)}</h2>{f'<p class="sub">{legenda}</p>' if legenda else ''}
 <div class="rolar"><table><thead><tr><th></th><th>Candidato(a)</th><th>Partido</th><th class="n">Votos</th><th class="n">% válidos</th></tr></thead>
 <tbody>{''.join(linhas)}</tbody></table></div></section>'''
@@ -171,6 +173,20 @@ def incorporar(hash_, titulo):
     return (f'<details class="card bloco incorporar"><summary>Incorporar este mapa no seu site ou blog</summary>'
             f'<p class="sub">Copie o código abaixo e cole no seu site. O mapa é interativo e se atualiza sozinho.</p>'
             f'<textarea readonly rows="4" onclick="this.select()">{e(cod)}</textarea></details>')
+
+def chave_partido(sg):
+    return re.sub(r'[^A-Z0-9]', '', unicodedata.normalize('NFKD', str(sg)).encode('ascii', 'ignore').decode().upper())
+
+_partidos = None
+def link_partido(sg, rotulo=None):
+    """Sigla clicável, levando à página do partido (gerar_seo_partidos.py), se ela existir."""
+    global _partidos
+    if _partidos is None:
+        d = os.path.join(RAIZ, 'partidos')
+        _partidos = set(os.listdir(d)) if os.path.isdir(d) else set()
+    k = chave_partido(sg).lower()
+    rot = rotulo or e(sg)
+    return f'<a href="/partidos/{k}/">{rot}</a>' if k in _partidos else rot
 
 def link_cand(uf, nome_urna, numero, rotulo):
     """Link para a página do candidato, se ela existir (gerar_seo_cand.py)."""
@@ -184,7 +200,7 @@ def mais_votados(uf, cd, nm, deps, lim=5):
         if not d or cd not in d['mu']: continue
         a = d['mu'][cd]; vv, l = a[1], a[2:]
         itens = ''.join(f'<li>{link_cand(uf, d["cands"][l[j]][1], d["cands"][l[j]][0], "<b>" + e(cap(d["cands"][l[j]][1])) + "</b>")} '
-                        f'<span>{e(d["cands"][l[j]][2])} · {fmt(l[j + 1])} votos · {pc(l[j + 1], vv)}</span></li>' for j in range(0, min(len(l), lim * 2), 2))
+                        f'<span>{link_partido(d["cands"][l[j]][2])} · {fmt(l[j + 1])} votos · {pc(l[j + 1], vv)}</span></li>' for j in range(0, min(len(l), lim * 2), 2))
         if itens:
             partes.append(f'<h3>{CARGO[c]}</h3><ol class="eleitos">{itens}</ol>')
     return f'<section class="card bloco"><h2>Deputados mais votados em {e(nm)}</h2>{"".join(partes)}</section>' if partes else ''
@@ -239,14 +255,15 @@ def main():
             for c in ('1', '3'):
                 if c not in d2 or not d2[c][1] or not d2[c][2]: continue
                 pst, tot, lst = d2[c]
-                blocos.append(tabela(f'{CARGO[c]} · 2º turno', lst, tot, mp2['nomes'].get(c, {}), f'Votação de {DATA_T2} na cidade · {apurado(pst)}.'))
+                blocos.append(tabela(f'{CARGO[c]} · 2º turno', lst, tot, mp2['nomes'].get(c, {}), f'Votação de {DATA_T2} na cidade · {apurado(pst)}.',
+                                     href=lambda n, c=c: f'/#/{uf}/{m["t"]}?c={c}&amp;k={n}&amp;t=2'))
                 frases.append(frase_t2(CARGO[c], lst, tot, mp2['nomes'].get(c, {}), onde, pst))
             if blocos:
                 blocos.append('<h2 class="turno-sep">1º turno · 4 de outubro</h2>')
             for c in ('1', '3', '5'):
                 if c not in d: continue
                 pst, tot, lst = d[c]
-                blocos.append(tabela(CARGO[c], lst, tot, nomes.get(c, {}),
+                blocos.append(tabela(CARGO[c], lst, tot, nomes.get(c, {}), href=lambda n, c=c: f'/#/{uf}/{m["t"]}?c={c}&amp;k={n}', legenda=
                                      ('Cada eleitor votou em dois candidatos ao Senado; os percentuais somam 200%.' if c == '5' else '') +
                                      f' Principais candidatos na cidade · {pc(pst, 100).replace("%", "")}% das seções apuradas.'))
                 frases.append(frase_vencedor(CARGO[c], lst, tot, nomes.get(c, {}), onde))
@@ -287,32 +304,32 @@ def main():
             x = tse(uf, c, ele) if T2_BR else None
             if not x or not x[1]: continue
             tem_t2 = True
-            blocos.append(tabela(f'{CARGO[c]} · 2º turno', x[0][:2], x[1], x[2], f'Votação de {DATA_T2} {e(em_uf)} · {apurado(x[3])}.', x[4] if c == '3' else None))
+            blocos.append(tabela(f'{CARGO[c]} · 2º turno', x[0][:2], x[1], x[2], f'Votação de {DATA_T2} {e(em_uf)} · {apurado(x[3])}.', x[4] if c == '3' else None, href=lambda n, c=c: f'/#/{uf}?c={c}&amp;t=2'))
             frases.append(frase_t2(CARGO[c], x[0], x[1], x[2], em_uf, x[3], eleito=(c == '3' and x[4].get(x[0][0][0], '').startswith('ELEITO'))))
         if tem_t2:
             blocos.append('<h2 class="turno-sep">1º turno · 4 de outubro</h2>')
         oficial = tse_pres(uf)
         pres, vvp, nmp = (oficial[0][:6], oficial[1], oficial[2]) if oficial else (sorted(soma['1'].items(), key=lambda x: -x[1])[:4], vv['1'], nomes.get('1', {}))
-        blocos.append(tabela('Presidente', pres, vvp, nmp, f'Votação para presidente {e(em_uf)}.'))
+        blocos.append(tabela('Presidente', pres, vvp, nmp, f'Votação para presidente {e(em_uf)}.', href=lambda n: f'/#/{uf}'))
         frases.append(frase_vencedor('Presidente', pres, vvp, nmp, em_uf))
         c_gov = 'c3t1'
         if R.get(c_gov):
             l, tot, nm_, st = top_resumo(c_gov, 8)
             if l:
-                blocos.append(tabela('Governador', l, tot, nm_, '', st))
+                blocos.append(tabela('Governador', l, tot, nm_, '', st, href=lambda n: f'/#/{uf}?c=3'))
                 segundo = [nm_[n][0] for n, _ in l if 'TURNO' in st.get(n, '')]
                 eleito = [nm_[n][0] for n, _ in l if st.get(n, '').startswith('ELEITO')]
                 frases.append(f'{cap(eleito[0])} venceu a eleição para governador no 1º turno.' if eleito else
                               f'A disputa para governador vai para o 2º turno, em {DATA_T2}, entre {cap(segundo[0])} e {cap(segundo[1])}.' if len(segundo) == 2 else '')
         l, tot, nm_, st = top_resumo('c5t1', 8)
         if l:
-            blocos.append(tabela('Senador', l, tot, nm_, 'Duas vagas em disputa; cada eleitor votou em dois candidatos.', st))
+            blocos.append(tabela('Senador', l, tot, nm_, 'Duas vagas em disputa; cada eleitor votou em dois candidatos.', st, href=lambda n: f'/#/{uf}?c=5'))
             el = [cap(nm_[n][0]) for n, _ in l if st.get(n, '').startswith('ELEITO')]
             if el: frases.append(f'Eleitos para o Senado: {" e ".join(el)}.')
         for chave, cargo in (('c6t1', 'Deputados federais eleitos'), ('c7t1', 'Deputados distritais eleitos' if uf == 'df' else 'Deputados estaduais eleitos')):
             x = R.get(chave) or (R.get('c8t1') if chave == 'c7t1' else None)
             if not x or not x.get('eleitos'): continue
-            itens = ''.join(f'<li>{link_cand(uf, k[0], k[2], "<b>" + e(cap(k[0])) + "</b>")} <span>{e(k[1])} · {fmt(k[3])} votos</span></li>' for k in sorted(x['eleitos'], key=lambda k: -k[3]))
+            itens = ''.join(f'<li>{link_cand(uf, k[0], k[2], "<b>" + e(cap(k[0])) + "</b>")} <span>{link_partido(k[1])} · {fmt(k[3])} votos</span></li>' for k in sorted(x['eleitos'], key=lambda k: -k[3]))
             blocos.append(f'<section class="card bloco"><h2>{cargo} {e(em_uf)} ({len(x["eleitos"])})</h2><ol class="eleitos">{itens}</ol>'
                           f'<p class="sub"><a href="/#/{uf}?c={"6" if chave == "c6t1" else ("8" if uf == "df" else "7")}">Ver a votação de cada candidato por cidade no mapa →</a></p></section>')
         if tem_t2:

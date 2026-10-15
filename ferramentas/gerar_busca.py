@@ -10,6 +10,12 @@ R = G.RAIZ
 out = []
 for uf, nm in sorted(G.UF_NM.items(), key=lambda x: x[1]):
     out.append([nm, f'Estado · {uf.upper()}', f'/resultados/{uf}/'])
+pdir = os.path.join(R, 'partidos')
+for d in sorted(os.listdir(pdir)) if os.path.isdir(pdir) else []:
+    f = os.path.join(pdir, d, 'index.html')
+    if os.path.exists(f):
+        m = re.search(r'<title>(.*?):', html.unescape(open(f, encoding='utf-8').read(2000)))
+        if m: out.append([m.group(1), 'Partido · eleitos em 2026 e 2024', f'/partidos/{d}/'])
 for uf in sorted(G.UF_NM):
     geo = G.le(f'geo/{uf}.json')
     for m in (geo or {}).get('mu', []):
