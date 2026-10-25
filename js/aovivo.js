@@ -41,7 +41,7 @@
   async function carrega1T() {
     if (T1) return T1;
     // 1º turno já resumido num arquivo do site (1 download em vez de 29 do TSE); se faltar, busca no TSE
-    T1 = await pega('mapa/presidente-t1.json');
+    T1 = await pega('mapa/presidente-t1.json', false, 8000);
     if (!T1 || !T1.br) {
       const us = [...UNID, 'br'], rs = await Promise.all(us.map(u => pega(arq('6257', u))));
       T1 = Object.fromEntries(us.map((u, i) => [u, unidade(rs[i])]));
@@ -221,24 +221,40 @@
     box.hidden = false;
   }
 
+  let rodando = false, desenhou = false;
+  const agenda = ms => { clearTimeout(timer); timer = setTimeout(() => { timer = null; if (!document.hidden) atualiza(); }, ms); };
   async function atualiza() {
+    if (rodando) return;
+    rodando = true;
+    let fim = true;
     try {
-      const t1 = await carrega1T();
-      if (!t1.br) return;
-      COEF = (await pega('mapa/projecao-t2.json?t=' + Math.floor(Date.now() / 60000), true, 6000)) || COEF;
-      // 1) o total do Brasil primeiro (um arquivo só): a parcial aparece na hora
-      const br = unidade(await pega(arq('6258', 'br'), true, 10000)) || ULT.br;
-      if (br) ULT.br = br;
-      const parcial = { ...ULT, br };
-      if (br) desenha(t1, parcial);
-      // 2) os estados em seguida, cada um com tempo limite; quem não responder fica com a última leitura
-      await Promise.all(UNID.map(async u => { const x = unidade(await pega(arq('6258', u), true)); if (x) ULT[u] = x; }));
-      const t2 = { ...ULT, br };
-      desenha(t1, t2);
-      clearTimeout(timer);
-      if (!t2.br || t2.br.pst < 100) timer = setTimeout(() => { if (!document.hidden) atualiza(); else timer = setTimeout(atualiza, 30000); }, 30000);
-    } catch (e) { console.warn('ao vivo', e); }
+      // tudo em paralelo: 1º turno (arquivo do site), coeficientes da projeção e total do Brasil (TSE)
+      const [t1, coef, brR] = await Promise.all([
+        carrega1T(),
+        pega('mapa/projecao-t2.json?t=' + Math.floor(Date.now() / 60000), true, 6000),
+        pega(arq('6258', 'br'), true, 10000),
+      ]);
+      if (!t1 || !t1.br) { T1 = null; throw new Error('1º turno indisponível'); }
+      if (coef) COEF = coef;
+      const br = unidade(brR) || ULT.br;
+      if (!br) throw new Error('TSE sem resposta');
+      ULT.br = br;
+      desenha(t1, { ...ULT, br }); desenhou = true;          // a parcial aparece na hora
+      // os estados em seguida, cada um com tempo limite; quem não responder fica com a última leitura
+      await Promise.all(UNID.map(async u => { const x = unidade(await pega(arq('6258', u), true, 7000)); if (x) ULT[u] = x; }));
+      desenha(t1, { ...ULT, br });
+      fim = br.pst >= 100;
+    } catch (e) {
+      console.warn('ao vivo', e);
+      if (!desenhou) box.innerHTML = `<p class="sub">O TSE está demorando para responder. Tentando de novo em instantes… <button type="button" class="compart-bt" id="avTentar">Tentar agora</button></p>`;
+      const b = document.getElementById('avTentar'); if (b) b.onclick = () => atualiza();
+      rodando = false; agenda(10000); return;              // erro: tenta de novo em 10 s, sempre
+    }
+    rodando = false;
+    if (!fim) agenda(30000);
   }
-  carrega1T().then(atualiza);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && !timer) atualiza(); });
+  // se em 10 s nada tiver aparecido (rede lenta), avisa em vez de "Carregando" sem fim
+  setTimeout(() => { if (!desenhou && !box.querySelector('#avTentar')) box.innerHTML = '<p class="sub">Conectando ao TSE… a rede está lenta, a parcial aparece assim que chegar.</p>'; }, 10000);
+  atualiza();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && !timer && !rodando) atualiza(); });
 })();
