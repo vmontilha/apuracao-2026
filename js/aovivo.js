@@ -15,7 +15,12 @@
   const K = 0.03;
   const n_ = v => Number(String(v ?? 0).replace(',', '.')) || 0;
   const arq = (e, u) => `${TSE}/${e}/dados/${u}/${u}-c0001-e00${e}-u.json`;
-  const pega = (url, fresco) => fetch(url, fresco ? { cache: 'no-cache' } : {}).then(r => r.ok ? r.json() : null).catch(() => null);
+  // cada arquivo tem no máximo `ms` para chegar: com o TSE sobrecarregado, um arquivo lento não trava a tela
+  const pega = (url, fresco, ms = 8000) => {
+    const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms);
+    return fetch(url, { cache: fresco ? 'no-cache' : 'default', signal: ac.signal }).then(r => r.ok ? r.json() : null).catch(() => null).finally(() => clearTimeout(t));
+  };
+  const ULT = {};   // última leitura boa de cada estado (usada se o TSE demorar a responder)
   const logit = p => Math.log(Math.max(1e-6, p) / Math.max(1e-6, 1 - p));
   const sig = x => 1 / (1 + Math.exp(-x));
   const pp = x => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x * 100).toFixed(1).replace('.', ',') + ' p.p.';
@@ -145,6 +150,10 @@
           <div class="sub">Comparecimento projetado: ${fmt(Math.round(pr.tot.c))} de ${fmt(pr.tot.te)} eleitores.</div></div>
       </div>
       <p class="sub av-nota">Projeção estatística do Radar da Eleição, não é resultado oficial. Para as urnas que ainda não foram abertas, parte do 1º turno de cada estado e aplica a variação já vista nas urnas apuradas (comparecimento/abstenção, brancos e nulos e divisão dos votos): do próprio estado, na proporção do que ele já apurou, e no restante a da sua região.</p>`;
+    } else if (vivo) {
+      h += `<div class="av-grid"><div class="av-box"><h3>Projeção do resultado final</h3><p class="sub">Calculando com os dados dos estados…</p></div>
+        <div class="av-box"><h3>Abstenção</h3><div class="av-abst"><span>1º turno</span><b>${P(abst1)}</b></div>
+        <div class="av-abst"><span>2º turno · urnas apuradas</span><b>${abst2 == null ? '–' : P(abst2)}</b></div></div></div>`;
     } else {
       const c1 = br1.cands;
       h += `<div class="av-grid"><div class="av-box"><h3>Como foi o 1º turno</h3>${c1.slice(0, 2).map(c => `<div class="av-proj"><span><i class="av-sw" style="background:${cor(c.n)}"></i>${esc(cap(c.nm))}</span><b>${P(c.v / br1.vv, 2)}</b><small>${fmt(c.v)} votos</small></div>`).join('')}
@@ -181,9 +190,14 @@
     try {
       const t1 = await carrega1T();
       if (!t1.br) return;
-      const rs = await Promise.all(UNID.map(u => pega(arq('6258', u), true)));
-      const t2 = Object.fromEntries(UNID.map((u, i) => [u, unidade(rs[i])]));
-      t2.br = unidade(await pega(arq('6258', 'br'), true));
+      // 1) o total do Brasil primeiro (um arquivo só): a parcial aparece na hora
+      const br = unidade(await pega(arq('6258', 'br'), true, 10000)) || ULT.br;
+      if (br) ULT.br = br;
+      const parcial = { ...ULT, br };
+      if (br) desenha(t1, parcial);
+      // 2) os estados em seguida, cada um com tempo limite; quem não responder fica com a última leitura
+      await Promise.all(UNID.map(async u => { const x = unidade(await pega(arq('6258', u), true)); if (x) ULT[u] = x; }));
+      const t2 = { ...ULT, br };
       desenha(t1, t2);
       clearTimeout(timer);
       if (!t2.br || t2.br.pst < 100) timer = setTimeout(() => { if (!document.hidden) atualiza(); else timer = setTimeout(atualiza, 30000); }, 30000);
