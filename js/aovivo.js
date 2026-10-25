@@ -25,7 +25,7 @@
   const sig = x => 1 / (1 + Math.exp(-x));
   const pp = x => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x * 100).toFixed(1).replace('.', ',') + ' p.p.';
   const P = (x, d = 1) => (x * 100).toFixed(d).replace('.', ',') + '%';
-  let T1 = null, timer = null;
+  let T1 = null, timer = null, COEF = null;
 
   const lista = r => {
     const out = [];
@@ -100,6 +100,27 @@
     return { tot, porU };
   }
 
+  /* Projeção (método combinado com o editor):
+     em cada estado, parte-se do 1º turno; o comparecimento varia como nas mesmas seções já apuradas da região (dComp);
+     válidos = comparecimento × val2; quem votou em Lula ou Flávio continua com ele e os votos dos OUTROS candidatos
+     se dividem na proporção p vista, seção a seção, nas urnas apuradas da região. */
+  function projetaRegioes(t1, C, A, B) {
+    if (!C || !C.regiao) return null;
+    const tot = { te: 0, c: 0, vv: 0, A: 0, B: 0 }, porU = {};
+    for (const [k, , ufs] of REGS) {
+      const r = C.regiao[k] || C.brasil; if (!r || r.p == null) continue;
+      for (const u of ufs) {
+        const a = t1[u]; if (!a) continue;
+        const L1 = a.cands.find(c => c.n === A)?.v || 0, F1 = a.cands.find(c => c.n === B)?.v || 0, O1 = Math.max(0, a.vv - L1 - F1);
+        const comp = a.te * Math.min(1, Math.max(0, a.c / a.te + r.dComp)), vv = comp * r.val2;
+        const sA = a.vv ? (L1 + r.p * O1) / a.vv : 0.5;
+        const o = { te: a.te, c: comp, vv, A: vv * sA, B: vv * (1 - sA) };
+        porU[u] = o; tot.te += o.te; tot.c += o.c; tot.vv += o.vv; tot.A += o.A; tot.B += o.B;
+      }
+    }
+    return tot.vv ? { tot, porU } : null;
+  }
+
   const somaReg = (t, ufs) => {
     const o = { st: 0, ts: 0, est: 0, c: 0, vv: 0, te: 0, cand: {} };
     for (const u of ufs) {
@@ -117,9 +138,11 @@
     // foto do 1º turno (mesmo candidato, arquivo que já existe com certeza)
     const foto = c => `${TSE}/6257/fotos/br/${(br1.cands.find(x => x.n === c.n) || c).sq}.jpeg`;
     const abst1 = br1.a / br1.te;
-    const abst2 = vivo && br.est ? 1 - br.c / br.est : null;
+    let eB = 0, cB = 0;
+    for (const u of Object.keys(UF_NM)) { const x = t2[u]; if (x && x.est) { eB += x.est; cB += x.c; } }
+    const abst2 = vivo && eB ? 1 - cB / eB : null;   // urnas apuradas no Brasil, sem o exterior
     const MIN_PROJ = 3;   // % de urnas apuradas a partir do qual a projeção aparece
-    const pr = vivo && apurado >= MIN_PROJ ? projeta(t1, t2, A.n, B.n) : null;
+    const pr = vivo && apurado >= MIN_PROJ ? projetaRegioes(t1, COEF, A.n, B.n) : null;
     const cartao = c => {
       const s = vivo && br.vv ? c.v / br.vv : null;
       return `<div class="av-cand" style="--c:${cor(c.n)}">
@@ -147,16 +170,16 @@
           <div class="sub">Diferença projetada: ${fmt(Math.round(Math.abs(pr.tot.A - pr.tot.B)))} votos · confiabilidade ${conf} (${P(apurado / 100, 0)} apurado)</div></div>
         <div class="av-box"><h3>Abstenção</h3>
           <div class="av-abst"><span>1º turno</span><b>${P(abst1)}</b></div>
-          <div class="av-abst"><span>2º turno · urnas apuradas</span><b>${abst2 == null ? '–' : P(abst2)}</b></div>
+          <div class="av-abst"><span>2º turno · urnas apuradas (Brasil, sem exterior)</span><b>${abst2 == null ? '–' : P(abst2)}</b></div>
           <div class="av-abst"><span>2º turno · projeção final</span><b>${P(abstP)}</b></div>
           <div class="av-var ${abstP > abst1 ? 'sobe' : 'cai'}">Variação projetada: ${pp(abstP - abst1)} · ${fmt(Math.round(Math.abs((pr.tot.te - pr.tot.c) - (br1.te - br1.c))))} eleitores ${abstP > abst1 ? 'a mais' : 'a menos'} sem votar</div>
           <div class="sub">Comparecimento projetado: ${fmt(Math.round(pr.tot.c))} de ${fmt(pr.tot.te)} eleitores.</div></div>
       </div>
-      <p class="sub av-nota">Projeção estatística do Radar da Eleição, não é resultado oficial. Para as urnas que ainda não foram abertas, parte do 1º turno de cada estado e aplica a variação já vista nas urnas apuradas (comparecimento/abstenção, brancos e nulos e divisão dos votos): do próprio estado, na proporção do que ele já apurou, e no restante a da sua região.</p>`;
+      <p class="sub av-nota">Projeção estatística do Radar da Eleição, não é resultado oficial. Comparando a mesma seção no 1º e no 2º turno nas urnas já apuradas de cada região: a abstenção de cada estado varia como na sua região; quem votou em Lula ou Flávio no 1º turno continua com ele; e os votos dos outros candidatos se dividem entre os dois na proporção vista na região.${COEF ? ` Seções comparadas: ${fmt(Object.values(COEF.regiao).reduce((t, r) => t + (r.secoes || 0), 0))} (cálculo de ${esc(String(COEF.gerado).slice(11, 16))}).` : ''}</p>`;
     } else if (vivo) {
       h += `<div class="av-grid"><div class="av-box"><h3>Projeção do resultado final</h3><p class="sub">${apurado < MIN_PROJ ? `A projeção aparece a partir de ${MIN_PROJ}% das urnas apuradas (agora: ${P(apurado / 100, 2)}). Antes disso, as primeiras urnas ainda não representam o país.` : 'Calculando com os dados dos estados…'}</p></div>
         <div class="av-box"><h3>Abstenção</h3><div class="av-abst"><span>1º turno</span><b>${P(abst1)}</b></div>
-        <div class="av-abst"><span>2º turno · urnas apuradas</span><b>${abst2 == null ? '–' : P(abst2)}</b></div></div></div>`;
+        <div class="av-abst"><span>2º turno · urnas apuradas (Brasil, sem exterior)</span><b>${abst2 == null ? '–' : P(abst2)}</b></div></div></div>`;
     } else {
       const c1 = br1.cands;
       h += `<div class="av-grid"><div class="av-box"><h3>Como foi o 1º turno</h3>${c1.slice(0, 2).map(c => `<div class="av-proj"><span><i class="av-sw" style="background:${cor(c.n)}"></i>${esc(cap(c.nm))}</span><b>${P(c.v / br1.vv, 2)}</b><small>${fmt(c.v)} votos</small></div>`).join('')}
@@ -194,6 +217,7 @@
     try {
       const t1 = await carrega1T();
       if (!t1.br) return;
+      COEF = (await pega('mapa/projecao-t2.json?t=' + Math.floor(Date.now() / 60000), true, 6000)) || COEF;
       // 1) o total do Brasil primeiro (um arquivo só): a parcial aparece na hora
       const br = unidade(await pega(arq('6258', 'br'), true, 10000)) || ULT.br;
       if (br) ULT.br = br;

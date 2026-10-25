@@ -28,6 +28,8 @@ jobs:
           python-version: '3.12'
       - name: Gera o resumo das cidades do 2º turno
         run: python ferramentas/gerar_mapa.py --t2 --saida mapa
+      - name: Coeficientes da projeção (mesma seção no 1º e no 2º turno, por região)
+        run: python ferramentas/projecao_t2.py .
       - name: Atualiza as páginas de resultado (Google) com o 2º turno
         run: python ferramentas/gerar_seo.py .
       - name: Publica se mudou
