@@ -152,7 +152,14 @@
         <div class="pc">${s == null ? '–' : P(s, 2)}</div></div></div>`;
     };
     const sA = vivo && br.vv ? A.v / br.vv : 0;
-    let h = `<div class="av-topo"><div><span class="av-selo">${vivo ? (apurado < 100 ? '● Ao vivo' : 'Apuração concluída') : '2º turno hoje'}</span>
+    // faixa de aviso: o TSE está há mais de 5 minutos sem publicar parcial nova (horário do TSE é o de Brasília, UTC−3)
+    let faixa = '';
+    if (vivo && apurado < 100 && br.dg && br.hg) {
+      const [d, m, y] = String(br.dg).split('/'), quando = Date.parse(`${y}-${m}-${d}T${br.hg}-03:00`);
+      const min = Math.floor((Date.now() - quando) / 60000);
+      if (min > 5) faixa = `<div class="av-faixa" role="status">⚠ TSE não atualiza há ${min} minutos <span>(última parcial às ${esc(String(br.hg).slice(0, 5).replace(':', 'h'))})</span></div>`;
+    }
+    let h = faixa + `<div class="av-topo"><div><span class="av-selo">${vivo ? (apurado < 100 ? '● Ao vivo' : 'Apuração concluída') : '2º turno hoje'}</span>
         <h2>Presidente · 2º turno</h2></div>
         <div class="av-prog"><b>${vivo ? P(apurado / 100, 2) : '0%'}</b> das urnas apuradas<div class="bar"><i style="width:${apurado}%"></i></div>
         <small>${vivo ? 'Atualizado às ' + esc(String(br.hg || '').slice(0, 5).replace(':', 'h')) + ' · atualiza sozinho' : 'A apuração começa às 17h (horário de Brasília), quando as urnas fecham.'}</small></div></div>

@@ -346,3 +346,7 @@ html.embed .aovivo { display: none !important; }
 @media (max-width: 700px) { .aovivo { min-height: 1420px; } }
 .av-pj { font-weight: 700; background: var(--surface-2); }
 .av-t1 { color: var(--muted); }
+.av-faixa { margin: -20px -20px 16px; padding: 10px 20px; background: #FBF0DE; color: #8A5200; font-weight: 700; border-radius: 12px 12px 0 0; border-bottom: 1px solid #F2D7A6; }
+.av-faixa span { font-weight: 400; }
+:root[data-theme="dark"] .av-faixa { background: rgba(242, 184, 102, .16); color: #F2B866; border-color: transparent; }
+@media (max-width: 700px) { .av-faixa { margin: -14px -14px 12px; padding: 10px 14px; } }
