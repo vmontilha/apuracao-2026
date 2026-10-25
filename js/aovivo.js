@@ -104,17 +104,22 @@
      em cada estado, parte-se do 1º turno; o comparecimento varia como nas mesmas seções já apuradas da região (dComp);
      válidos = comparecimento × val2; quem votou em Lula ou Flávio continua com ele e os votos dos OUTROS candidatos
      se dividem na proporção p vista, seção a seção, nas urnas apuradas da região. */
-  function projetaRegioes(t1, C, A, B) {
+  function projetaRegioes(t1, t2, C, A, B) {
+    // resultado final = votos JÁ APURADOS de cada estado + estimativa só das urnas que ainda faltam
     if (!C || !C.regiao) return null;
     const tot = { te: 0, c: 0, vv: 0, A: 0, B: 0 }, porU = {};
     for (const [k, , ufs] of REGS) {
       const r = C.regiao[k] || C.brasil; if (!r || r.p == null) continue;
       for (const u of ufs) {
         const a = t1[u]; if (!a) continue;
+        const b = t2[u] || {}, te = b.te || a.te, est = Math.min(te, b.est || 0);
+        const vA2 = b.cands?.find(c => c.n === A)?.v || 0, vB2 = b.cands?.find(c => c.n === B)?.v || 0;
         const L1 = a.cands.find(c => c.n === A)?.v || 0, F1 = a.cands.find(c => c.n === B)?.v || 0, O1 = Math.max(0, a.vv - L1 - F1);
-        const comp = a.te * Math.min(1, Math.max(0, a.c / a.te + r.dComp)), vv = comp * r.val2;
+        // urnas que faltam: comparecimento do 1º turno ajustado pela variação da região; válidos = comparecimento × val2;
+        // Lula e Flávio mantêm seus eleitores e os votos dos outros candidatos se dividem na proporção p da região
+        const resto = Math.max(0, te - est), comp = resto * Math.min(1, Math.max(0, a.c / a.te + r.dComp)), vv = comp * r.val2;
         const sA = a.vv ? (L1 + r.p * O1) / a.vv : 0.5;
-        const o = { te: a.te, c: comp, vv, A: vv * sA, B: vv * (1 - sA) };
+        const o = { te, c: (b.c || 0) + comp, vv: vA2 + vB2 + vv, A: vA2 + vv * sA, B: vB2 + vv * (1 - sA) };
         porU[u] = o; tot.te += o.te; tot.c += o.c; tot.vv += o.vv; tot.A += o.A; tot.B += o.B;
       }
     }
@@ -143,7 +148,7 @@
     for (const u of Object.keys(UF_NM)) { const x = t2[u]; if (x && x.est) { eB += x.est; cB += x.c; } }
     const abst2 = vivo && eB ? 1 - cB / eB : null;   // urnas apuradas no Brasil, sem o exterior
     const MIN_PROJ = 3;   // % de urnas apuradas a partir do qual a projeção aparece
-    const pr = vivo && apurado >= MIN_PROJ ? projetaRegioes(t1, COEF, A.n, B.n) : null;
+    const pr = vivo && apurado >= MIN_PROJ ? projetaRegioes(t1, t2, COEF, A.n, B.n) : null;
     const cartao = c => {
       const s = vivo && br.vv ? c.v / br.vv : null;
       return `<div class="av-cand" style="--c:${cor(c.n)}">
@@ -183,7 +188,7 @@
           <div class="av-var ${abstP > abst1 ? 'sobe' : 'cai'}">Variação projetada: ${pp(abstP - abst1)} · ${fmt(Math.round(Math.abs((pr.tot.te - pr.tot.c) - (br1.te - br1.c))))} eleitores ${abstP > abst1 ? 'a mais' : 'a menos'} sem votar</div>
           <div class="sub">Comparecimento projetado: ${fmt(Math.round(pr.tot.c))} de ${fmt(pr.tot.te)} eleitores.</div></div>
       </div>
-      <p class="sub av-nota">Projeção estatística do Radar da Eleição, não é resultado oficial. Comparando a mesma seção no 1º e no 2º turno nas urnas já apuradas de cada região: a abstenção de cada estado varia como na sua região; quem votou em Lula ou Flávio no 1º turno continua com ele; e os votos dos outros candidatos se dividem entre os dois na proporção vista na região.${COEF ? ` Seções comparadas: ${fmt(Object.values(COEF.regiao).reduce((t, r) => t + (r.secoes || 0), 0))} (cálculo de ${esc(String(COEF.gerado).slice(11, 16))}).` : ''}</p>`;
+      <p class="sub av-nota">Projeção estatística do Radar da Eleição, não é resultado oficial: votos já apurados + estimativa das urnas que faltam. Para estimá-las, comparando a mesma seção no 1º e no 2º turno nas urnas já apuradas de cada região: a abstenção de cada estado varia como na sua região; quem votou em Lula ou Flávio no 1º turno continua com ele; e os votos dos outros candidatos se dividem entre os dois na proporção vista na região.${COEF ? ` Seções comparadas: ${fmt(Object.values(COEF.regiao).reduce((t, r) => t + (r.secoes || 0), 0))} (cálculo de ${esc(String(COEF.gerado).slice(11, 16))}).` : ''}</p>`;
     } else if (vivo) {
       h += `<div class="av-grid"><div class="av-box"><h3>Projeção do resultado final</h3><p class="sub">${apurado < MIN_PROJ ? `A projeção aparece a partir de ${MIN_PROJ}% das urnas apuradas (agora: ${P(apurado / 100, 2)}). Antes disso, as primeiras urnas ainda não representam o país.` : 'Calculando com os dados dos estados…'}</p></div>
         <div class="av-box"><h3>Abstenção</h3><div class="av-abst"><span>1º turno</span><b>${P(abst1)}</b></div>
