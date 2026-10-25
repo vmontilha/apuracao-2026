@@ -35,8 +35,12 @@
 
   async function carrega1T() {
     if (T1) return T1;
-    const rs = await Promise.all(UNID.map(u => pega(arq('6257', u))));
-    T1 = Object.fromEntries(UNID.map((u, i) => [u, unidade(rs[i])]));
+    // 1º turno já resumido num arquivo do site (1 download em vez de 29 do TSE); se faltar, busca no TSE
+    T1 = await pega('mapa/presidente-t1.json');
+    if (!T1 || !T1.br) {
+      const us = [...UNID, 'br'], rs = await Promise.all(us.map(u => pega(arq('6257', u))));
+      T1 = Object.fromEntries(us.map((u, i) => [u, unidade(rs[i])]));
+    }
     return T1;
   }
 
@@ -160,8 +164,6 @@
       if (!t2.br || t2.br.pst < 100) timer = setTimeout(() => { if (!document.hidden) atualiza(); else timer = setTimeout(atualiza, 30000); }, 30000);
     } catch (e) { console.warn('ao vivo', e); }
   }
-  // 1º turno do Brasil também é necessário
-  const t1br = pega(arq('6257', 'br')).then(r => { if (T1) T1.br = unidade(r); return r; });
-  carrega1T().then(async t => { t.br = unidade(await t1br); atualiza(); });
+  carrega1T().then(atualiza);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && !timer) atualiza(); });
 })();
