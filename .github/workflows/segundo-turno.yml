@@ -9,6 +9,9 @@ on:
     - cron: '3-59/10 19-23 25 10 *'
     - cron: '3-59/10 0-4 26 10 *'
   workflow_dispatch:
+  # gatilho confiável: um commit em gatilho/segundo-turno.txt dispara a atualização (o agendamento do GitHub atrasa em dia de eleição)
+  push:
+    paths: ['gatilho/segundo-turno.txt']
 
 permissions:
   contents: write
@@ -29,7 +32,7 @@ jobs:
       - name: Gera o resumo das cidades do 2º turno
         run: python ferramentas/gerar_mapa.py --t2 --saida mapa
       - name: Coeficientes da projeção (mesma seção no 1º e no 2º turno, por região)
-        run: python ferramentas/projecao_t2.py .
+        run: AMOSTRA=300 python ferramentas/projecao_t2.py .
       - name: Atualiza as páginas de resultado (Google) com o 2º turno
         run: python ferramentas/gerar_seo.py .
       - name: Publica se mudou
