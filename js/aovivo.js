@@ -118,8 +118,8 @@
       const conf = apurado < 20 ? 'baixa' : apurado < 60 ? 'média' : 'alta';
       h += `<div class="av-grid">
         <div class="av-box"><h3>Projeção do resultado final</h3>
-          <div class="av-proj"><span style="color:${cor(A.n)}">${esc(cap(A.nm))}</span><b>${P(pa)}</b><small>${fmt(Math.round(pr.tot.A))} votos</small></div>
-          <div class="av-proj"><span style="color:${cor(B.n)}">${esc(cap(B.nm))}</span><b>${P(1 - pa)}</b><small>${fmt(Math.round(pr.tot.B))} votos</small></div>
+          <div class="av-proj"><span><i class="av-sw" style="background:${cor(A.n)}"></i>${esc(cap(A.nm))}</span><b>${P(pa)}</b><small>${fmt(Math.round(pr.tot.A))} votos</small></div>
+          <div class="av-proj"><span><i class="av-sw" style="background:${cor(B.n)}"></i>${esc(cap(B.nm))}</span><b>${P(1 - pa)}</b><small>${fmt(Math.round(pr.tot.B))} votos</small></div>
           <div class="sub">Diferença projetada: ${fmt(Math.round(Math.abs(pr.tot.A - pr.tot.B)))} votos · confiabilidade ${conf} (${P(apurado / 100, 0)} apurado)</div></div>
         <div class="av-box"><h3>Abstenção</h3>
           <div class="av-abst"><span>1º turno</span><b>${P(abst1)}</b></div>
@@ -131,7 +131,7 @@
       <p class="sub av-nota">Projeção estatística do Radar da Eleição, não é resultado oficial: para as urnas que faltam, usa o 1º turno de cada estado ajustado pela mudança já vista nas urnas apuradas (comparecimento, brancos e nulos e divisão dos votos).</p>`;
     } else {
       const c1 = br1.cands;
-      h += `<div class="av-grid"><div class="av-box"><h3>Como foi o 1º turno</h3>${c1.slice(0, 2).map(c => `<div class="av-proj"><span style="color:${cor(c.n)}">${esc(cap(c.nm))}</span><b>${P(c.v / br1.vv, 2)}</b><small>${fmt(c.v)} votos</small></div>`).join('')}
+      h += `<div class="av-grid"><div class="av-box"><h3>Como foi o 1º turno</h3>${c1.slice(0, 2).map(c => `<div class="av-proj"><span><i class="av-sw" style="background:${cor(c.n)}"></i>${esc(cap(c.nm))}</span><b>${P(c.v / br1.vv, 2)}</b><small>${fmt(c.v)} votos</small></div>`).join('')}
           <div class="sub">Os demais candidatos somaram ${P(1 - (c1[0].v + c1[1].v) / br1.vv)} dos votos válidos.</div></div>
         <div class="av-box"><h3>Abstenção no 1º turno</h3><div class="av-abst"><span>Abstenção</span><b>${P(abst1)}</b></div>
           <div class="sub">${fmt(br1.a)} de ${fmt(br1.te)} eleitores não votaram. A projeção do 2º turno aparece assim que as primeiras urnas forem apuradas.</div></div></div>`;
@@ -142,11 +142,11 @@
       const ap = r2.ts ? r2.st / r2.ts : 0, a1 = r1.te ? 1 - r1.c / r1.te : 0, a2 = r2.est ? 1 - r2.c / r2.est : null;
       const vA = r2.cand[A.n] || 0, vB = r2.cand[B.n] || 0, tv = r2.vv;
       const link = k === 'ZZ' ? nm : `<a href="#/${k}">${nm}</a>`;
-      return `<tr><td>${link}</td><td class="n">${P(ap, 1)}</td><td class="n" style="color:${cor(A.n)}">${tv ? P(vA / tv) : '–'}</td><td class="n" style="color:${cor(B.n)}">${tv ? P(vB / tv) : '–'}</td>
+      return `<tr><td>${link}</td><td class="n">${P(ap, 1)}</td><td class="n">${tv ? P(vA / tv) : '–'}</td><td class="n">${tv ? P(vB / tv) : '–'}</td>
         <td class="n">${P(a1)}</td><td class="n">${a2 == null ? '–' : P(a2)}</td><td class="n">${a2 == null ? '–' : pp(a2 - a1)}</td></tr>`;
     }).join('');
     h += `<h3 class="av-h3">Por região</h3><div class="rolar"><table class="av-tab"><thead><tr><th>Região</th><th class="n">Urnas apuradas</th>
-      <th class="n">${esc(cap(A.nm))}</th><th class="n">${esc(cap(B.nm))}</th><th class="n">Abstenção 1º t.</th><th class="n">Abstenção 2º t.</th><th class="n">Variação</th></tr></thead><tbody>${linhas}</tbody></table></div>
+      <th class="n"><i class="av-sw" style="background:${cor(A.n)}"></i>${esc(cap(A.nm))}</th><th class="n"><i class="av-sw" style="background:${cor(B.n)}"></i>${esc(cap(B.nm))}</th><th class="n">Abstenção 1º t.</th><th class="n">Abstenção 2º t.</th><th class="n">Variação</th></tr></thead><tbody>${linhas}</tbody></table></div>
       <div class="av-pe"><a href="#explorar">Ver no mapa por estado, cidade e seção ↓</a> · <a href="painel.html">Painel completo da apuração</a></div>`;
     box.innerHTML = h;
     box.hidden = false;

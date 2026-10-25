@@ -340,3 +340,7 @@ html.embed .aovivo { display: none !important; }
 .aovivo .rolar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .av-duelo, .av-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 @media (max-width: 700px) { .av-duelo, .av-grid { grid-template-columns: minmax(0, 1fr); } .av-proj small { min-width: 0; } .av-tab th, .av-tab td { padding: 6px; font-size: 13px; } }
+.av-sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+/* espaço reservado: a tela do 2º turno aparece acima do mapa sem empurrar a página depois de carregar */
+.aovivo { min-height: 1000px; }
+@media (max-width: 700px) { .aovivo { min-height: 1420px; } }

@@ -55,3 +55,4 @@ button,input,textarea{font:inherit;color:inherit}
 .anuncio{margin:16px 0}
 @media (max-width:600px){.est h1{font-size:24px;line-height:32px}.bloco h2{font-size:20px;line-height:28px}.est th,.est td{padding:6px 4px;font-size:14px}.topo-est nav{font-size:14px;gap:4px 14px}.busca{max-width:none;order:3}}
 .eleitos a,.links a,.lead a,.bloco .sub a,.cidades a{text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px}
+.cand-topo .sub a,.est .sub a{text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px}
