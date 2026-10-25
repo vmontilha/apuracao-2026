@@ -70,7 +70,9 @@
     }
     if (!N.wt) return null;
     const med = g => ({ t: g.wt ? g.dt / g.wt : 0, q: g.wq ? g.dq / g.wq : 0, b: g.wb ? g.db / g.wb : 0 });
-    const Dn = med(N);
+    // a mudança do país também é encolhida para o 1º turno enquanto se apurou pouco (as primeiras urnas não representam o país)
+    const fN = N.te ? N.est / N.te : 0, wN = fN / (fN + K), d0 = med(N);
+    const Dn = { t: wN * d0.t, q: wN * d0.q, b: wN * d0.b };
     // mudança de cada região; região que apurou pouco se apoia no país (mesmo encolhimento K)
     const Dr = {};
     for (const [k, g] of Object.entries(R)) {
