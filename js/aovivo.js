@@ -136,7 +136,8 @@
     const [A, B] = (br?.cands?.length >= 2 ? br.cands : br1.cands).slice(0, 2);
     const apurado = br ? br.pst : 0, vivo = br && br.st > 0;
     // foto do 1º turno (mesmo candidato, arquivo que já existe com certeza)
-    const foto = c => `${TSE}/6257/fotos/br/${(br1.cands.find(x => x.n === c.n) || c).sq}.jpeg`;
+    // mesma foto que o mapa usa no 2º turno (vem do cache do navegador); antes da apuração, a do 1º turno
+    const foto = c => vivo && c.sq ? `${TSE}/6258/fotos/br/${c.sq}.jpeg` : `${TSE}/6257/fotos/br/${(br1.cands.find(x => x.n === c.n) || c).sq}.jpeg`;
     const abst1 = br1.a / br1.te;
     let eB = 0, cB = 0;
     for (const u of Object.keys(UF_NM)) { const x = t2[u]; if (x && x.est) { eB += x.est; cB += x.c; } }
@@ -146,7 +147,7 @@
     const cartao = c => {
       const s = vivo && br.vv ? c.v / br.vv : null;
       return `<div class="av-cand" style="--c:${cor(c.n)}">
-        <img src="${foto(c)}" alt="" width="64" height="64" onerror="this.style.visibility='hidden'">
+        <img src="${foto(c)}" alt="" width="64" height="64" decoding="async" onerror="if(!this.dataset.t1){this.dataset.t1=1;this.src='${TSE}/6257/fotos/br/${(br1.cands.find(x => x.n === c.n) || c).sq}.jpeg'}else this.style.visibility='hidden'">
         <div><div class="nm">${esc(cap(c.nm))}${c.st && /eleito/i.test(c.st) && !/não/i.test(c.st) ? ' <span class="tag el">Eleito</span>' : ''}</div>
         <div class="sg">${linkPartido(c.sg)}${vivo ? ' · ' + fmt(c.v) + ' votos' : ''}</div>
         <div class="pc">${s == null ? '–' : P(s, 2)}</div></div></div>`;

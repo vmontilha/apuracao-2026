@@ -65,7 +65,9 @@ async function pool(items, n, fn) {
 }
 
 const cargoUF = (uf, c) => (uf === 'df' && c === '7') ? '8' : c;
-function urlRes(uf, mun, c, t) { c = cargoUF(uf, c); const e = eleDo(c, t); return `${T}/${e}/dados/${uf}/${uf}${mun || ''}-c${pad(c, 4)}-e${pad(e, 6)}-u.json`; }
+// estados com 2º turno para governador em 2026 (nos demais, o governador foi eleito no 1º turno e o TSE não tem arquivo do 2º)
+const GOV_T2 = new Set(['ac', 'am', 'df', 'es', 'rn', 'to']);
+function urlRes(uf, mun, c, t) { c = cargoUF(uf, c); if (c === '3' && (t || tEf(c)) === '2' && !GOV_T2.has(uf)) t = '1'; const e = eleDo(c, t); return `${T}/${e}/dados/${uf}/${uf}${mun || ''}-c${pad(c, 4)}-e${pad(e, 6)}-u.json`; }
 const urlBr = t => { const e = eleDo('1', t); return `${T}/${e}/dados/br/br-c0001-e${pad(e, 6)}-u.json`; };
 // tudo clicável: sigla -> página do partido; deputado -> página do candidato (só existem para quem teve 10 mil votos ou mais)
 const PARTIDOS_PAG = new Set(['agir', 'avante', 'cidadania', 'dc', 'democrata', 'mdb', 'missao', 'mobiliza', 'novo', 'pcb', 'pcdob', 'pco', 'pdt', 'pl', 'pmb', 'pode', 'pp', 'prd', 'prtb', 'psb', 'psd', 'psdb', 'psol', 'pstu', 'pt', 'pv', 'rede', 'republicanos', 'solidariedade', 'uniao', 'up']);
