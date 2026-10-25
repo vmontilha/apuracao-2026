@@ -45,36 +45,52 @@
   }
 
   function projeta(t1, t2, A, B) {
-    // mudanças nacionais observadas nas urnas apuradas (média ponderada)
-    let wt = 0, dt = 0, wq = 0, dq = 0, wb = 0, db = 0;
+    // mudanças observadas nas urnas apuradas: em cada estado, somadas por região e no país (médias ponderadas)
+    const regDe = u => (REGS.find(([, , ufs]) => ufs.includes(u)) || ['BR'])[0];
+    const acum = () => ({ wt: 0, dt: 0, wq: 0, dq: 0, wb: 0, db: 0, est: 0, te: 0 });
+    const R = {}, N = acum();
+    const vot = (x, n) => x?.cands.find(c => c.n === n)?.v || 0;
     for (const u of UNID) {
-      const a = t1[u], b = t2[u]; if (!a || !b || !b.est || !b.c) continue;
-      const vA2 = b.cands.find(c => c.n === A)?.v || 0, vB2 = b.cands.find(c => c.n === B)?.v || 0;
-      const vA1 = a.cands.find(c => c.n === A)?.v || 0, vB1 = a.cands.find(c => c.n === B)?.v || 0;
-      dt += b.est * (b.c / b.est - a.c / a.te); wt += b.est;
-      dq += b.c * (b.vv / b.c - a.vv / a.c); wq += b.c;
-      if (vA2 + vB2 && vA1 + vB1) { db += (vA2 + vB2) * (logit(vA2 / (vA2 + vB2)) - logit(vA1 / (vA1 + vB1))); wb += vA2 + vB2; }
+      const a = t1[u], b = t2[u]; if (!a) continue;
+      const r = R[regDe(u)] || (R[regDe(u)] = acum());
+      r.te += b?.te || a.te; N.te += b?.te || a.te;
+      if (!b || !b.est || !b.c) continue;
+      const vA2 = vot(b, A), vB2 = vot(b, B), vA1 = vot(a, A), vB1 = vot(a, B);
+      for (const g of [r, N]) {
+        g.est += b.est;
+        g.dt += b.est * (b.c / b.est - a.c / a.te); g.wt += b.est;
+        g.dq += b.c * (b.vv / b.c - a.vv / a.c); g.wq += b.c;
+        if (vA2 + vB2 && vA1 + vB1) { g.db += (vA2 + vB2) * (logit(vA2 / (vA2 + vB2)) - logit(vA1 / (vA1 + vB1))); g.wb += vA2 + vB2; }
+      }
     }
-    if (!wt) return null;
-    const Dt = dt / wt, Dq = wq ? dq / wq : 0, Db = wb ? db / wb : 0;
+    if (!N.wt) return null;
+    const med = g => ({ t: g.wt ? g.dt / g.wt : 0, q: g.wq ? g.dq / g.wq : 0, b: g.wb ? g.db / g.wb : 0 });
+    const Dn = med(N);
+    // mudança de cada região; região que apurou pouco se apoia no país (mesmo encolhimento K)
+    const Dr = {};
+    for (const [k, g] of Object.entries(R)) {
+      const f = g.te ? g.est / g.te : 0, w = f / (f + K), d = med(g);
+      Dr[k] = { t: w * d.t + (1 - w) * Dn.t, q: w * d.q + (1 - w) * Dn.q, b: w * d.b + (1 - w) * Dn.b };
+    }
     const tot = { te: 0, c: 0, vv: 0, A: 0, B: 0, te1: 0, c1: 0 }, porU = {};
     for (const u of UNID) {
       const a = t1[u], b = t2[u]; if (!a) continue;
+      const D = Dr[regDe(u)] || Dn;
       const te = b?.te || a.te, est = b?.est || 0, f = te ? est / te : 0, w = f / (f + K);
       const t1r = a.c / a.te, q1r = a.vv / a.c;
-      const vA1 = a.cands.find(c => c.n === A)?.v || 0, vB1 = a.cands.find(c => c.n === B)?.v || 0;
-      const b1 = vA1 + vB1 ? vA1 / (vA1 + vB1) : 0.5;
-      const vA2 = b?.cands.find(c => c.n === A)?.v || 0, vB2 = b?.cands.find(c => c.n === B)?.v || 0;
+      const vA1 = vot(a, A), vB1 = vot(a, B), b1 = vA1 + vB1 ? vA1 / (vA1 + vB1) : 0.5;
+      const vA2 = vot(b, A), vB2 = vot(b, B);
       const t2r = est && b.c ? b.c / est : t1r, q2r = b?.c ? b.vv / b.c : q1r, b2 = vA2 + vB2 ? vA2 / (vA2 + vB2) : b1;
-      const tU = t1r + w * (t2r - t1r) + (1 - w) * Dt;
-      const qU = q1r + w * (q2r - q1r) + (1 - w) * Dq;
-      const bU = sig(logit(b1) + w * (logit(b2) - logit(b1)) + (1 - w) * Db);
+      // urnas ainda não abertas do estado: 1º turno do estado + mudança do próprio estado (pesando pela apuração) ou da região
+      const tU = t1r + w * (t2r - t1r) + (1 - w) * D.t;
+      const qU = q1r + w * (q2r - q1r) + (1 - w) * D.q;
+      const bU = sig(logit(b1) + w * (logit(b2) - logit(b1)) + (1 - w) * D.b);
       const resto = Math.max(0, te - est), cU = resto * tU, vvU = cU * qU;
-      const o = { te, c: (b?.c || 0) + cU, vv: (b?.vv || 0) + vvU, A: vA2 + vvU * bU, B: vB2 + vvU * (1 - bU) };
+      const o = { te, c: (b?.c || 0) + cU, vv: (b?.vv || 0) + vvU, A: vA2 + vvU * bU, B: vB2 + vvU * (1 - bU), te1: a.te, c1: a.c };
       porU[u] = o;
       tot.te += te; tot.c += o.c; tot.vv += o.vv; tot.A += o.A; tot.B += o.B; tot.te1 += a.te; tot.c1 += a.c;
     }
-    return { tot, porU, Dt };
+    return { tot, porU };
   }
 
   const somaReg = (t, ufs) => {
@@ -128,7 +144,7 @@
           <div class="av-var ${abstP > abst1 ? 'sobe' : 'cai'}">Variação projetada: ${pp(abstP - abst1)} · ${fmt(Math.round(Math.abs((pr.tot.te - pr.tot.c) - (br1.te - br1.c))))} eleitores ${abstP > abst1 ? 'a mais' : 'a menos'} sem votar</div>
           <div class="sub">Comparecimento projetado: ${fmt(Math.round(pr.tot.c))} de ${fmt(pr.tot.te)} eleitores.</div></div>
       </div>
-      <p class="sub av-nota">Projeção estatística do Radar da Eleição, não é resultado oficial: para as urnas que faltam, usa o 1º turno de cada estado ajustado pela mudança já vista nas urnas apuradas (comparecimento, brancos e nulos e divisão dos votos).</p>`;
+      <p class="sub av-nota">Projeção estatística do Radar da Eleição, não é resultado oficial. Para as urnas que ainda não foram abertas, parte do 1º turno de cada estado e aplica a variação já vista nas urnas apuradas (comparecimento/abstenção, brancos e nulos e divisão dos votos): do próprio estado, na proporção do que ele já apurou, e no restante a da sua região.</p>`;
     } else {
       const c1 = br1.cands;
       h += `<div class="av-grid"><div class="av-box"><h3>Como foi o 1º turno</h3>${c1.slice(0, 2).map(c => `<div class="av-proj"><span><i class="av-sw" style="background:${cor(c.n)}"></i>${esc(cap(c.nm))}</span><b>${P(c.v / br1.vv, 2)}</b><small>${fmt(c.v)} votos</small></div>`).join('')}
@@ -141,12 +157,21 @@
       const r2 = somaReg(t2, ufs), r1 = somaReg(t1, ufs);
       const ap = r2.ts ? r2.st / r2.ts : 0, a1 = r1.te ? 1 - r1.c / r1.te : 0, a2 = r2.est ? 1 - r2.c / r2.est : null;
       const vA = r2.cand[A.n] || 0, vB = r2.cand[B.n] || 0, tv = r2.vv;
+      let pA = null, aP = null;
+      if (pr) {
+        let s = { te: 0, c: 0, vv: 0, A: 0 };
+        for (const u of ufs) { const o = pr.porU[u]; if (o) { s.te += o.te; s.c += o.c; s.vv += o.vv; s.A += o.A; } }
+        if (s.vv) { pA = s.A / s.vv; aP = 1 - s.c / s.te; }
+      }
       const link = k === 'ZZ' ? nm : `<a href="#/${k}">${nm}</a>`;
       return `<tr><td>${link}</td><td class="n">${P(ap, 1)}</td><td class="n">${tv ? P(vA / tv) : '–'}</td><td class="n">${tv ? P(vB / tv) : '–'}</td>
-        <td class="n">${P(a1)}</td><td class="n">${a2 == null ? '–' : P(a2)}</td><td class="n">${a2 == null ? '–' : pp(a2 - a1)}</td></tr>`;
+        <td class="n av-pj">${pA == null ? '–' : P(pA) + ' × ' + P(1 - pA)}</td>
+        <td class="n">${P(a1)}</td><td class="n">${a2 == null ? '–' : P(a2)}</td><td class="n av-pj">${aP == null ? '–' : P(aP)}</td><td class="n">${aP == null ? '–' : pp(aP - a1)}</td></tr>`;
     }).join('');
     h += `<h3 class="av-h3">Por região</h3><div class="rolar"><table class="av-tab"><thead><tr><th>Região</th><th class="n">Urnas apuradas</th>
-      <th class="n"><i class="av-sw" style="background:${cor(A.n)}"></i>${esc(cap(A.nm))}</th><th class="n"><i class="av-sw" style="background:${cor(B.n)}"></i>${esc(cap(B.nm))}</th><th class="n">Abstenção 1º t.</th><th class="n">Abstenção 2º t.</th><th class="n">Variação</th></tr></thead><tbody>${linhas}</tbody></table></div>
+      <th class="n"><i class="av-sw" style="background:${cor(A.n)}"></i>${esc(cap(A.nm))}</th><th class="n"><i class="av-sw" style="background:${cor(B.n)}"></i>${esc(cap(B.nm))}</th>
+      <th class="n">Projeção final</th><th class="n">Abstenção 1º t.</th><th class="n">Abst. 2º t. (apuradas)</th><th class="n">Abst. projetada</th><th class="n">Variação projetada</th></tr></thead><tbody>${linhas}</tbody></table></div>
+      <p class="sub av-nota">Votos de cada candidato e "Abst. 2º t." são das urnas já apuradas. "Projeção final" e "Abst. projetada" incluem a estimativa das urnas que faltam, feita estado a estado com a variação da própria região.</p>
       <div class="av-pe"><a href="#explorar">Ver no mapa por estado, cidade e seção ↓</a> · <a href="painel.html">Painel completo da apuração</a></div>`;
     box.innerHTML = h;
     box.hidden = false;
