@@ -291,3 +291,52 @@ html.embed .embed-marca { display: inline-block; margin: 0 0 8px; font-size: 13p
 /* links dentro de listas e tabelas: discretos, mas visíveis ao passar o mouse */
 a.lk { color: inherit; text-decoration: underline; text-decoration-color: var(--axis); text-underline-offset: 2px; }
 a.lk:hover { color: var(--accent); text-decoration-color: currentColor; }
+
+/* ---------- 2º turno de presidente ao vivo (js/aovivo.js) ---------- */
+.aovivo { padding: 20px; margin: 16px 0; }
+.av-topo { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px 24px; margin-bottom: 16px; }
+.av-topo h2 { font-size: 28px; line-height: 36px; margin: 4px 0 0; }
+.av-selo { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #B42318; }
+:root[data-theme="dark"] .av-selo { color: #FF8A7A; }
+.av-prog { min-width: 240px; flex: 0 1 360px; font-size: 14px; color: var(--muted); }
+.av-prog b { font-size: 24px; color: var(--ink); margin-right: 4px; }
+.av-prog .bar { height: 8px; border-radius: 4px; background: var(--grid); overflow: hidden; margin: 6px 0 4px; }
+.av-prog .bar i { display: block; height: 100%; background: var(--radar-teal); }
+.av-prog small { display: block; font-size: 12px; line-height: 16px; }
+.av-duelo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.av-cand { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; border: 1px solid var(--border); border-top: 4px solid var(--c); background: var(--surface); }
+.av-cand img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface-2); flex: none; }
+.av-cand .nm { font-weight: 700; font-size: 18px; line-height: 24px; }
+.av-cand .sg { color: var(--muted); font-size: 13px; }
+.av-cand .pc { font-size: 32px; line-height: 40px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.av-barra { position: relative; display: flex; height: 14px; border-radius: 7px; overflow: hidden; margin: 12px 0 4px; background: var(--grid); }
+.av-barra span { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background: var(--ink); }
+.av-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.av-box { padding: 14px; border-radius: 12px; background: var(--surface-2); }
+.av-box h3, .av-h3 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.av-h3 { margin-top: 20px; }
+.av-proj, .av-abst { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; }
+.av-proj span, .av-abst span { flex: 1; font-weight: 700; }
+.av-abst span { font-weight: 400; color: var(--ink-2); }
+.av-proj b, .av-abst b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.av-proj small { color: var(--muted); font-size: 12px; min-width: 120px; text-align: right; }
+.av-var { font-weight: 700; margin: 6px 0; }
+.av-var.sobe { color: #B42318; } .av-var.cai { color: var(--good-text); }
+:root[data-theme="dark"] .av-var.sobe { color: #FF8A7A; }
+.av-nota { margin: 10px 0 0; font-size: 12px; }
+.av-tab { width: 100%; border-collapse: collapse; font-size: 14px; }
+.av-tab th, .av-tab td { padding: 8px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+.av-tab th { color: var(--muted); font-size: 12px; }
+.av-tab .n { text-align: right; font-variant-numeric: tabular-nums; }
+.av-pe { margin-top: 12px; font-size: 14px; }
+html.embed .aovivo { display: none !important; }
+@media (max-width: 700px) {
+  .av-duelo, .av-grid { grid-template-columns: 1fr; }
+  .av-cand .pc { font-size: 26px; }
+  .aovivo { padding: 14px; }
+  .av-topo h2 { font-size: 22px; line-height: 28px; }
+}
+.aovivo { min-width: 0; }
+.aovivo .rolar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.av-duelo, .av-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 700px) { .av-duelo, .av-grid { grid-template-columns: minmax(0, 1fr); } .av-proj small { min-width: 0; } .av-tab th, .av-tab td { padding: 6px; font-size: 13px; } }

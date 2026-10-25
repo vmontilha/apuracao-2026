@@ -1116,7 +1116,7 @@ temaBt.onclick = () => {
 function mostraAba() {
   menu(false);
   const m = S.aba === 'mapa';
-  document.querySelector('.hero').hidden = !m; $('explorar').hidden = !m; document.querySelector('.features').hidden = !m;
+  document.querySelector('.hero').hidden = !m; $('explorar').hidden = !m; if ($('aoVivo').innerHTML) $('aoVivo').hidden = !m; document.querySelector('.features').hidden = !m;
   for (const a of ['Congresso', 'Partidos', 'Historico', 'Comparar']) $('aba' + a).hidden = S.aba !== a.toLowerCase();
   document.querySelectorAll('#abas a[data-aba]').forEach(x => x.classList.toggle('on', x.dataset.aba === S.aba));
 }
