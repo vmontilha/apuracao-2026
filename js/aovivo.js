@@ -143,12 +143,6 @@
     // foto do 1º turno (mesmo candidato, arquivo que já existe com certeza)
     // mesma foto que o mapa usa no 2º turno (vem do cache do navegador); antes da apuração, a do 1º turno
     const foto = c => vivo && c.sq ? `${TSE}/6258/fotos/br/${c.sq}.jpeg` : `${TSE}/6257/fotos/br/${(br1.cands.find(x => x.n === c.n) || c).sq}.jpeg`;
-    const abst1 = br1.a / br1.te;
-    let eB = 0, cB = 0;
-    for (const u of Object.keys(UF_NM)) { const x = t2[u]; if (x && x.est) { eB += x.est; cB += x.c; } }
-    const abst2 = vivo && eB ? 1 - cB / eB : null;   // urnas apuradas no Brasil, sem o exterior
-    const MIN_PROJ = 3;   // % de urnas apuradas a partir do qual a projeção aparece
-    const pr = vivo && apurado >= MIN_PROJ ? projetaRegioes(t1, t2, COEF, A.n, B.n) : null;
     const cartao = c => {
       const s = vivo && br.vv ? c.v / br.vv : null;
       return `<div class="av-cand" style="--c:${cor(c.n)}">
@@ -174,25 +168,16 @@
       <div class="sub" style="text-align:center">Parcial dos votos válidos · a linha marca 50%</div>` : ''}`;
     // regiões
     const linhas = REGS.map(([k, nm, ufs]) => {
-      const r2 = somaReg(t2, ufs), r1 = somaReg(t1, ufs);
-      const ap = r2.ts ? r2.st / r2.ts : 0, a1 = r1.te ? 1 - r1.c / r1.te : 0, a2 = r2.est ? 1 - r2.c / r2.est : null;
+      const r2 = somaReg(t2, ufs);
+      const ap = r2.ts ? r2.st / r2.ts : 0, a2 = r2.est ? 1 - r2.c / r2.est : null;
       const vA = r2.cand[A.n] || 0, vB = r2.cand[B.n] || 0, tv = r2.vv;
-      const vA1 = r1.cand[A.n] || 0, vB1 = r1.cand[B.n] || 0, tv1 = r1.vv;
-      let pA = null, aP = null;
-      if (pr) {
-        let s = { te: 0, c: 0, vv: 0, A: 0 };
-        for (const u of ufs) { const o = pr.porU[u]; if (o) { s.te += o.te; s.c += o.c; s.vv += o.vv; s.A += o.A; } }
-        if (s.vv) { pA = s.A / s.vv; aP = 1 - s.c / s.te; }
-      }
       const link = k === 'ZZ' ? nm : `<a href="#/${k}">${nm}</a>`;
-      return `<tr><td>${link}</td><td class="n">${P(ap, 1)}</td><td class="n av-t1">${vA1 + vB1 ? P(vA1 / (vA1 + vB1)) + ' × ' + P(vB1 / (vA1 + vB1)) : '–'}</td><td class="n">${tv ? P(vA / tv) : '–'}</td><td class="n">${tv ? P(vB / tv) : '–'}</td>
-        <td class="n av-pj">${pA == null ? '–' : P(pA) + ' × ' + P(1 - pA)}</td>
-        <td class="n">${P(a1)}</td><td class="n">${a2 == null ? '–' : P(a2)}</td><td class="n av-pj">${aP == null ? '–' : P(aP)}</td><td class="n">${aP == null ? '–' : pp(aP - a1)}</td></tr>`;
+      return `<tr><td>${link}</td><td class="n">${P(ap, 1)}</td><td class="n">${tv ? P(vA / tv) : '–'}</td><td class="n">${tv ? P(vB / tv) : '–'}</td><td class="n">${a2 == null ? '–' : P(a2)}</td></tr>`;
     }).join('');
-    h += `<h3 class="av-h3">Por região</h3><div class="rolar"><table class="av-tab"><thead><tr><th>Região</th><th class="n">Urnas apuradas</th><th class="n">1º turno</th>
+    h += `<h3 class="av-h3">Por região</h3><div class="rolar"><table class="av-tab"><thead><tr><th>Região</th><th class="n">Urnas apuradas</th>
       <th class="n"><i class="av-sw" style="background:${cor(A.n)}"></i>${esc(cap(A.nm))}</th><th class="n"><i class="av-sw" style="background:${cor(B.n)}"></i>${esc(cap(B.nm))}</th>
-      <th class="n">Projeção final</th><th class="n">Abstenção 1º t.</th><th class="n">Abst. 2º t. (apuradas)</th><th class="n">Abst. projetada</th><th class="n">Variação projetada</th></tr></thead><tbody>${linhas}</tbody></table></div>
-      <p class="sub av-nota">"1º turno": ${esc(cap(A.nm))} × ${esc(cap(B.nm))} em 4 de outubro, contando como válidos só os votos dos dois (sem os outros candidatos, brancos e nulos). Votos de cada candidato e "Abst. 2º t." são das urnas já apuradas no 2º turno. "Projeção final" e "Abst. projetada" incluem a estimativa das urnas que faltam, feita estado a estado com a variação da própria região.</p>
+      <th class="n">Abstenção</th></tr></thead><tbody>${linhas}</tbody></table></div>
+      <p class="sub av-nota">Percentual dos votos válidos e abstenção das urnas apuradas no 2º turno, em cada região.</p>
       <div class="av-pe"><a href="#explorar">Ver no mapa por estado, cidade e seção ↓</a> · <a href="painel.html">Painel completo da apuração</a></div>`;
     box.innerHTML = h;
     box.hidden = false;
