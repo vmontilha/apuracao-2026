@@ -172,34 +172,6 @@
       <div class="av-duelo">${cartao(A)}${cartao(B)}</div>
       ${vivo ? `<div class="av-barra" title="Parcial dos votos válidos"><i style="width:${(sA * 100).toFixed(2)}%;background:${cor(A.n)}"></i><i style="width:${(100 - sA * 100).toFixed(2)}%;background:${cor(B.n)}"></i><span></span></div>
       <div class="sub" style="text-align:center">Parcial dos votos válidos · a linha marca 50%</div>` : ''}`;
-    // projeção
-    if (pr) {
-      const pa = pr.tot.A / pr.tot.vv, abstP = 1 - pr.tot.c / pr.tot.te;
-      const conf = apurado < 20 ? 'baixa' : apurado < 60 ? 'média' : 'alta';
-      h += `<div class="av-grid">
-        <div class="av-box"><h3>Projeção do resultado final</h3>
-          <div class="av-proj"><span><i class="av-sw" style="background:${cor(A.n)}"></i>${esc(cap(A.nm))}</span><b>${P(pa)}</b><small>${fmt(Math.round(pr.tot.A))} votos</small></div>
-          <div class="av-proj"><span><i class="av-sw" style="background:${cor(B.n)}"></i>${esc(cap(B.nm))}</span><b>${P(1 - pa)}</b><small>${fmt(Math.round(pr.tot.B))} votos</small></div>
-          <div class="sub">Diferença projetada: ${fmt(Math.round(Math.abs(pr.tot.A - pr.tot.B)))} votos · confiabilidade ${conf} (${P(apurado / 100, 0)} apurado)</div></div>
-        <div class="av-box"><h3>Abstenção</h3>
-          <div class="av-abst"><span>1º turno</span><b>${P(abst1)}</b></div>
-          <div class="av-abst"><span>2º turno · urnas apuradas (Brasil, sem exterior)</span><b>${abst2 == null ? '–' : P(abst2)}</b></div>
-          <div class="av-abst"><span>2º turno · projeção final</span><b>${P(abstP)}</b></div>
-          <div class="av-var ${abstP > abst1 ? 'sobe' : 'cai'}">Variação projetada: ${pp(abstP - abst1)} · ${fmt(Math.round(Math.abs((pr.tot.te - pr.tot.c) - (br1.te - br1.c))))} eleitores ${abstP > abst1 ? 'a mais' : 'a menos'} sem votar</div>
-          <div class="sub">Comparecimento projetado: ${fmt(Math.round(pr.tot.c))} de ${fmt(pr.tot.te)} eleitores.</div></div>
-      </div>
-      <p class="sub av-nota">Projeção estatística do Radar da Eleição, não é resultado oficial: votos já apurados + estimativa das urnas que faltam. Para estimá-las, comparando a mesma seção no 1º e no 2º turno nas urnas já apuradas de cada região: a abstenção de cada estado varia como na sua região; quem votou em Lula ou Flávio no 1º turno continua com ele; e os votos dos outros candidatos se dividem entre os dois na proporção vista na região.${COEF ? ` Seções comparadas: ${fmt(Object.values(COEF.regiao).reduce((t, r) => t + (r.secoes || 0), 0))} (cálculo de ${esc(String(COEF.gerado).slice(11, 16))}).` : ''}</p>`;
-    } else if (vivo) {
-      h += `<div class="av-grid"><div class="av-box"><h3>Projeção do resultado final</h3><p class="sub">${apurado < MIN_PROJ ? `A projeção aparece a partir de ${MIN_PROJ}% das urnas apuradas (agora: ${P(apurado / 100, 2)}). Antes disso, as primeiras urnas ainda não representam o país.` : 'Calculando com os dados dos estados…'}</p></div>
-        <div class="av-box"><h3>Abstenção</h3><div class="av-abst"><span>1º turno</span><b>${P(abst1)}</b></div>
-        <div class="av-abst"><span>2º turno · urnas apuradas (Brasil, sem exterior)</span><b>${abst2 == null ? '–' : P(abst2)}</b></div></div></div>`;
-    } else {
-      const c1 = br1.cands;
-      h += `<div class="av-grid"><div class="av-box"><h3>Como foi o 1º turno</h3>${c1.slice(0, 2).map(c => `<div class="av-proj"><span><i class="av-sw" style="background:${cor(c.n)}"></i>${esc(cap(c.nm))}</span><b>${P(c.v / br1.vv, 2)}</b><small>${fmt(c.v)} votos</small></div>`).join('')}
-          <div class="sub">Os demais candidatos somaram ${P(1 - (c1[0].v + c1[1].v) / br1.vv)} dos votos válidos.</div></div>
-        <div class="av-box"><h3>Abstenção no 1º turno</h3><div class="av-abst"><span>Abstenção</span><b>${P(abst1)}</b></div>
-          <div class="sub">${fmt(br1.a)} de ${fmt(br1.te)} eleitores não votaram. A projeção do 2º turno aparece assim que as primeiras urnas forem apuradas.</div></div></div>`;
-    }
     // regiões
     const linhas = REGS.map(([k, nm, ufs]) => {
       const r2 = somaReg(t2, ufs), r1 = somaReg(t1, ufs);

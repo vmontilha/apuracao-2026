@@ -342,8 +342,8 @@ html.embed .aovivo { display: none !important; }
 @media (max-width: 700px) { .av-duelo, .av-grid { grid-template-columns: minmax(0, 1fr); } .av-proj small { min-width: 0; } .av-tab th, .av-tab td { padding: 6px; font-size: 13px; } }
 .av-sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
 /* espaço reservado: a tela do 2º turno aparece acima do mapa sem empurrar a página depois de carregar */
-.aovivo { min-height: 1000px; }
-@media (max-width: 700px) { .aovivo { min-height: 1420px; } }
+.aovivo { min-height: 900px; }
+@media (max-width: 700px) { .aovivo { min-height: 980px; } }
 .av-pj { font-weight: 700; background: var(--surface-2); }
 .av-t1 { color: var(--muted); }
 .av-faixa { margin: -20px -20px 16px; padding: 10px 20px; background: #FBF0DE; color: #8A5200; font-weight: 700; border-radius: 12px 12px 0 0; border-bottom: 1px solid #F2D7A6; }
